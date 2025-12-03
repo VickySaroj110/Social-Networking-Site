@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { FaRegHeart } from "react-icons/fa6";
 import logo from "../assets/logo.png"
 import StoryDp from './StoryDp';
@@ -16,6 +16,20 @@ function Feed() {
   const { storyList, currentUserStory } = useSelector(state => state.story)
   const navigate = useNavigate()
 
+  const reelsContainerRef = useRef(null);
+
+  // ⭐ Feed ke sab reels ka audio off
+  useEffect(() => {
+    const container = reelsContainerRef.current;
+    if (!container) return;
+
+    const videos = container.querySelectorAll('video');
+    videos.forEach((video) => {
+      video.muted = true;
+      video.defaultMuted = true; // autoplay ke bawajood hamesha mute rahe [web:67][web:74]
+    });
+  }, [loopData]);
+
   const handleProfileClick = (userName) => {
     navigate(`/profile/${userName}`)
   }
@@ -28,7 +42,10 @@ function Feed() {
         <img src={logo} alt="" className='w-[40px]' />
         <div className='flex items-center gap-[10px]'>
           <FaRegHeart className='text-white w-[25px] h-[25px]' />
-          <BiMessageAltDetail className='text-white w-[25px] h-[25px]' onClick={() => navigate("/messages")} />
+          <BiMessageAltDetail
+            className='text-white w-[25px] h-[25px]'
+            onClick={() => navigate("/messages")}
+          />
         </div>
       </div>
 
@@ -46,7 +63,10 @@ function Feed() {
       </div>
 
       {/* Posts and Reels */}
-      <div className='w-full min-h-[100vh] flex flex-col items-center gap-[20px] p-[10px] pt-[40px] bg-[#1a1a1a] rounded-t-[60px] relative pb-[120px]'>
+      <div
+        className='w-full min-h-[100vh] flex flex-col items-center gap-[20px] p-[10px] pt-[40px] bg-[#1a1a1a] rounded-t-[60px] relative pb-[120px]'
+        ref={reelsContainerRef}  // 👈 yaha ref
+      >
         <Nav />
 
         {/* Posts */}
@@ -54,7 +74,7 @@ function Feed() {
           <Post post={post} key={index} />
         ))}
 
-        {/* Loops / Reels with centered black top & bottom border and rounded corners */}
+        {/* Reels */}
         {loopData?.map((loop, index) => (
           <div key={index} className="w-full flex justify-center">
             <div className="w-full max-w-[480px] border-t-2 border-b-2 border-black rounded-2xl overflow-hidden">
