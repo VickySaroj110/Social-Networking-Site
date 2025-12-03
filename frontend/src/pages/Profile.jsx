@@ -29,7 +29,10 @@ function Profile() {
   // Fetch profile data
   const handleProfile = async () => {
     try {
-      const result = await axios.get(`${serverUrl}/api/user/getProfile/${userName}`, { withCredentials: true })
+      const result = await axios.get(
+        `${serverUrl}/api/user/getProfile/${userName}`,
+        { withCredentials: true }
+      )
       dispatch(setProfileData(result.data))
     } catch (error) { console.log(error) }
   }
@@ -37,12 +40,14 @@ function Profile() {
   // Fetch saved posts of current logged-in user only
   const fetchSavedPosts = async () => {
     try {
-      const res = await axios.get(`${serverUrl}/api/post/savedPosts`, { withCredentials: true })
-      // filter only posts saved by this profile user
-      if(profileData?._id === userData._id){
+      const res = await axios.get(
+        `${serverUrl}/api/post/savedPosts`,
+        { withCredentials: true }
+      )
+      if (profileData?._id === userData._id) {
         setSavedPosts(res.data)
       } else {
-        setSavedPosts([]) // other users cannot see saved posts
+        setSavedPosts([])
       }
     } catch (error) { console.log(error) }
   }
@@ -60,10 +65,14 @@ function Profile() {
   }
 
   // ALL USER POSTS
-  const userPosts = postData.filter(post => String(post.author?._id) === String(profileData?._id))
+  const userPosts = postData.filter(
+    post => String(post.author?._id) === String(profileData?._id)
+  )
 
   // ALL USER REELS
-  const userReels = loopData.filter(loop => String(loop.author?._id) === String(profileData?._id))
+  const userReels = loopData.filter(
+    loop => String(loop.author?._id) === String(profileData?._id)
+  )
 
   // Refresh a single post in savedPosts after like/comment/delete
   const handleSavedPostUpdate = (updatedPost) => {
@@ -79,19 +88,37 @@ function Profile() {
           <MdOutlineKeyboardBackspace className='text-white w-[25px] h-[25px]' />
         </div>
         <div className='font-semibold text-[20px]'>{profileData?.userName}</div>
-        <div className='font-semibold cursor-pointer text-[20px]' onClick={handleLogOut}>Log out</div>
+        <div
+          className='font-semibold cursor-pointer text-[20px]'
+          onClick={handleLogOut}
+        >
+          Log out
+        </div>
       </div>
 
       {/* Profile Info */}
       <div className='w-full h-[150px] flex items-start gap-[20px] lg:gap-[50px] pt-[20px] px-[10px] justify-center'>
-        <div className='w-[80px] h-[80px] md:w-[140px] md:h-[140px] border-2 border-black rounded-full overflow-hidden cursor-pointer'
-             onClick={() => navigate("/editprofile")}>
-          <img src={profileData?.profileImage || dp1} alt="" className='w-full h-full object-cover' />
+        <div
+          className={`w-[80px] h-[80px] md:w-[140px] md:h-[140px] border-2 border-black rounded-full overflow-hidden 
+          ${profileData?._id === userData._id ? "cursor-pointer" : "cursor-default"}`}
+          onClick={() => {
+            if (profileData?._id === userData._id) {
+              navigate("/editprofile")
+            }
+          }}
+        >
+          <img
+            src={profileData?.profileImage || dp1}
+            alt=""
+            className='w-full h-full object-cover'
+          />
         </div>
 
         <div>
           <div className='font-semibold text-[22px] text-white'>{profileData?.name}</div>
-          <div className='text-[17px] text-[#ffffffe8]'>{profileData?.profession || "New User"}</div>
+          <div className='text-[17px] text-[#ffffffe8]'>
+            {profileData?.profession || "New User"}
+          </div>
           <div className='text-[17px] text-[#ffffffe8]'>{profileData?.bio}</div>
         </div>
       </div>
@@ -105,13 +132,23 @@ function Profile() {
           <div className='text-[18px] md:text-[22px] text-[#ffffffc7]'>Posts</div>
         </div>
 
-        <div onClick={() => { setModalType("following"); setShowModal(true) }} className='cursor-pointer'>
-          <div className='text-white text-[22px] md:text-[30px] font-semibold'>{profileData?.following.length}</div>
+        <div
+          onClick={() => { setModalType("following"); setShowModal(true) }}
+          className='cursor-pointer'
+        >
+          <div className='text-white text-[22px] md:text-[30px] font-semibold'>
+            {profileData?.following.length}
+          </div>
           <div className='text-[18px] md:text-[22px] text-[#ffffffc7]'>Following</div>
         </div>
 
-        <div onClick={() => { setModalType("followers"); setShowModal(true) }} className='cursor-pointer'>
-          <div className='text-white text-[22px] md:text-[30px] font-semibold'>{profileData?.followers.length}</div>
+        <div
+          onClick={() => { setModalType("followers"); setShowModal(true) }}
+          className='cursor-pointer'
+        >
+          <div className='text-white text-[22px] md:text-[30px] font-semibold'>
+            {profileData?.followers.length}
+          </div>
           <div className='text-[18px] md:text-[22px] text-[#ffffffc7]'>Followers</div>
         </div>
       </div>
@@ -147,15 +184,32 @@ function Profile() {
 
       {/* TABS */}
       <div className='flex justify-center gap-10 mt-6 text-white'>
-        <button className={`font-semibold ${activeTab === "posts" ? "border-b-2 border-white pb-1" : ""}`} onClick={() => setActiveTab("posts")}>Posts</button>
-        <button className={`font-semibold ${activeTab === "reels" ? "border-b-2 border-white pb-1" : ""}`} onClick={() => setActiveTab("reels")}>Reels</button>
-        <button className={`font-semibold ${activeTab === "saved" ? "border-b-2 border-white pb-1" : ""}`} onClick={() => setActiveTab("saved")}>Saved</button>
+        <button
+          className={`font-semibold ${activeTab === "posts" ? "border-b-2 border-white pb-1" : ""}`}
+          onClick={() => setActiveTab("posts")}
+        >
+          Posts
+        </button>
+        <button
+          className={`font-semibold ${activeTab === "reels" ? "border-b-2 border-white pb-1" : ""}`}
+          onClick={() => setActiveTab("reels")}
+        >
+          Reels
+        </button>
+        <button
+          className={`font-semibold ${activeTab === "saved" ? "border-b-2 border-white pb-1" : ""}`}
+          onClick={() => setActiveTab("saved")}
+        >
+          Saved
+        </button>
       </div>
 
       {/* CONTENT BOX */}
       <div className='w-full min-h-[50vh] flex justify-center mt-4'>
-        <div className={`w-full max-w-[900px] flex flex-col items-center rounded-t-[30px] relative gap-[20px] pt-[16px] pb-[40px] 
-          ${activeTab === "reels" ? "bg-[#1a1a1a]" : "bg-white"}`}>
+        <div
+          className={`w-full max-w-[900px] flex flex-col items-center rounded-t-[30px] relative gap-[20px] pt-[16px] pb-[40px] 
+          ${activeTab === "reels" ? "bg-[#1a1a1a]" : "bg-white"}`}
+        >
 
           {/* POSTS */}
           {activeTab === "posts" && userPosts.length === 0 && (
@@ -181,7 +235,10 @@ function Profile() {
           )}
           {activeTab === "reels" && userReels.map((loop, index) => (
             <div key={index} className="w-full flex justify-center items-center">
-              <LoopCard loop={loop} onProfileClick={(u) => navigate(`/profile/${u}`)} />
+              <LoopCard
+                loop={loop}
+                onProfileClick={(u) => navigate(`/profile/${u}`)}
+              />
             </div>
           ))}
 
@@ -204,7 +261,7 @@ function Profile() {
             users={modalType === "followers" ? profileData?.followers : profileData?.following}
             onClose={() => {
               setShowModal(false)
-              handleProfile()  // refresh followers/following count real-time
+              handleProfile()
             }}
           />
         </div>
