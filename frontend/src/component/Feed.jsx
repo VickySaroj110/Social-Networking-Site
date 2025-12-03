@@ -18,7 +18,7 @@ function Feed() {
 
   const reelsContainerRef = useRef(null);
 
-  // ⭐ Feed ke sab reels ka audio off
+  // ✅ FIXED: Only mute videos ONCE on initial mount (not on every loopData update)
   useEffect(() => {
     const container = reelsContainerRef.current;
     if (!container) return;
@@ -26,9 +26,9 @@ function Feed() {
     const videos = container.querySelectorAll('video');
     videos.forEach((video) => {
       video.muted = true;
-      video.defaultMuted = true; // autoplay ke bawajood hamesha mute rahe [web:67][web:74]
+      video.defaultMuted = true;
     });
-  }, [loopData]);
+  }, []); // ✅ EMPTY DEPENDENCY - runs only once on mount!
 
   const handleProfileClick = (userName) => {
     navigate(`/profile/${userName}`)
@@ -65,7 +65,7 @@ function Feed() {
       {/* Posts and Reels */}
       <div
         className='w-full min-h-[100vh] flex flex-col items-center gap-[20px] p-[10px] pt-[40px] bg-[#1a1a1a] rounded-t-[60px] relative pb-[120px]'
-        ref={reelsContainerRef}  // 👈 yaha ref
+        ref={reelsContainerRef}
       >
         <Nav />
 

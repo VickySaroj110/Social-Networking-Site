@@ -19,7 +19,7 @@ import { useNavigate } from 'react-router-dom';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-function Post({ post, onUpdate }) {   // <-- added onUpdate prop
+function Post({ post, onUpdate }) {
     const dispatch = useDispatch();
     const { userData } = useSelector(state => state.user);
     const { postData } = useSelector(state => state.post);
@@ -29,42 +29,37 @@ function Post({ post, onUpdate }) {   // <-- added onUpdate prop
 
     const navigate = useNavigate();
 
-    // LIKE
+    // ✅ FIXED: Refetch complete data after like
     const handleLike = async () => {
         try {
-            const result = await axios.get(`${serverUrl}/api/post/like/${post._id}`, { withCredentials: true });
-            const updatedPost = result.data;
-
-            dispatch(setPostData(
-                postData.map(p => p._id === post._id ? updatedPost : p)
-            ));
-
-            if(onUpdate) onUpdate(updatedPost); // <-- update savedPosts in Profile.jsx
+            await axios.get(`${serverUrl}/api/post/like/${post._id}`, { withCredentials: true });
+            // Refetch ALL posts with complete data
+            const result = await axios.get(`${serverUrl}/api/post/getAll`, { withCredentials: true });
+            dispatch(setPostData(result.data));
+            
+            if(onUpdate) onUpdate(result.data.find(p => p._id === post._id));
         } catch (error) {
             console.error(error);
         }
     };
 
-    // COMMENT ADD
+    // ✅ FIXED: Refetch complete data after comment
     const handleComment = async () => {
         if(message.trim() === "") return;
         try {
-            const result = await axios.post(
+            await axios.post(
                 `${serverUrl}/api/post/comment/${post._id}`,
                 { message },
                 { withCredentials: true }
             );
-
-            const updatedPost = result.data;
-
-            dispatch(setPostData(
-                postData.map(p => p._id === post._id ? updatedPost : p)
-            ));
-
+            
+            // Refetch ALL posts with complete data
+            const result = await axios.get(`${serverUrl}/api/post/getAll`, { withCredentials: true });
+            dispatch(setPostData(result.data));
             setMessage("");
             setshowComment(true);
 
-            if(onUpdate) onUpdate(updatedPost); // <-- update savedPosts in Profile.jsx
+            if(onUpdate) onUpdate(result.data.find(p => p._id === post._id));
         } catch (error) {
             console.error(error);
         }
@@ -87,7 +82,7 @@ function Post({ post, onUpdate }) {   // <-- added onUpdate prop
                 saved: updatedSaved
             }));
 
-            if(onUpdate) onUpdate({ ...post }); // <-- trigger update
+            if(onUpdate) onUpdate({ ...post });
         } catch (error) {
             console.error(error);
         }
@@ -97,34 +92,29 @@ function Post({ post, onUpdate }) {   // <-- added onUpdate prop
     const handleDelete = async (postId) => {
         try {
             const res = await axios.delete(`${serverUrl}/api/post/delete/${postId}`, { withCredentials: true });
-
-            dispatch(setPostData(
-                postData.filter(p => p._id !== postId)
-            ));
-
+            
+            const result = await axios.get(`${serverUrl}/api/post/getAll`, { withCredentials: true });
+            dispatch(setPostData(result.data));
             toast.success(res.data.message);
 
-            if(onUpdate) onUpdate(null); // remove from savedPosts
+            if(onUpdate) onUpdate(null);
         } catch (error) {
             toast.error("Error deleting post");
         }
     };
 
-    // COMMENT DELETE
+    // ✅ FIXED: Refetch complete data after comment delete
     const handleCommentDelete = async (postId, commentId) => {
         try {
-            const res = await axios.delete(
+            await axios.delete(
                 `${serverUrl}/api/post/comment/${postId}/${commentId}`,
                 { withCredentials: true }
             );
+            
+            const result = await axios.get(`${serverUrl}/api/post/getAll`, { withCredentials: true });
+            dispatch(setPostData(result.data));
 
-            const updatedPost = res.data;
-
-            dispatch(setPostData(
-                postData.map(p => p._id === postId ? updatedPost : p)
-            ));
-
-            if(onUpdate) onUpdate(updatedPost); // <-- update savedPosts
+            if(onUpdate) onUpdate(result.data.find(p => p._id === postId));
         } catch (error) {
             console.error(error);
             toast.error("Error deleting comment");
@@ -239,40 +229,48 @@ function Post({ post, onUpdate }) {   // <-- added onUpdate prop
                     </div>
 
                     <div className='w-full max-h-[300px] overflow-auto'>
-                        {post.comments?.map((com) => (
-                            <div key={com._id} className='w-full px-[20px] py-[20px] border-b-2 border-b-gray-200'>
-                                <div className='flex gap-3'>
-                                    <div
-                                        className='w-[40px] h-[40px] border-2 border-gray-300 rounded-full overflow-hidden cursor-pointer'
-                                        onClick={() => navigate(`/profile/${com.author.userName}`)}
-                                    >
-                                        <img src={com.author?.profileImage || dp} alt="" className='w-full h-full object-cover' />
-                                    </div>
-
-                                    <div className='flex flex-col'>
-                                        <span
-                                            className='text-black font-medium cursor-pointer'
+                        {(!post.comments || post.comments.length === 0) ? (
+                            <div className='text-center text-gray-500 py-8'>No comments yet</div>
+                        ) : (
+                            post.comments.map((com) => (
+                                <div key={com._id} className='w-full px-[20px] py-[20px] border-b-2 border-b-gray-200'>
+                                    <div className='flex gap-3'>
+                                        <div
+                                            className='w-[40px] h-[40px] border-2 border-gray-300 rounded-full overflow-hidden cursor-pointer'
                                             onClick={() => navigate(`/profile/${com.author.userName}`)}
                                         >
-                                            {com.author.userName}
-                                        </span>
+                                            <img 
+                                                src={com.author?.profileImage || dp} 
+                                                alt="" 
+                                                className='w-full h-full object-cover'
+                                            />
+                                        </div>
 
-                                        <span className='text-gray-700'>
-                                            {com.message}
-                                        </span>
+                                        <div className='flex flex-col flex-1 min-w-0'>
+                                            <span
+                                                className='text-black font-medium cursor-pointer truncate'
+                                                onClick={() => navigate(`/profile/${com.author.userName}`)}
+                                            >
+                                                {com.author?.userName || 'Unknown'}
+                                            </span>
+
+                                            <span className='text-gray-700'>
+                                                {com.message}
+                                            </span>
+                                        </div>
+
+                                        {userData._id === com.author?._id && (
+                                            <button
+                                                onClick={() => handleCommentDelete(post._id, com._id)}
+                                                className='text-red-500 text-sm ml-auto'
+                                            >
+                                                Delete
+                                            </button>
+                                        )}
                                     </div>
-
-                                    {userData._id === com.author._id && (
-                                        <button
-                                            onClick={() => handleCommentDelete(post._id, com._id)}
-                                            className='text-red-500 text-sm ml-auto'
-                                        >
-                                            Delete
-                                        </button>
-                                    )}
                                 </div>
-                            </div>
-                        ))}
+                            ))
+                        )}
                     </div>
                 </div>
             }

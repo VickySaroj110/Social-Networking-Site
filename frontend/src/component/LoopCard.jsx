@@ -13,8 +13,8 @@ function LoopCard({ loop, onProfileClick }) {
     const commentRef = useRef()
     const dispatch = useDispatch()
 
-    const [isPlaying, setIsPlaying] = useState(true)
-    const [isMuted, setIsMuted] = useState(false)
+    const [isPlaying, setIsPlaying] = useState(false)
+    const [isMuted, setIsMuted] = useState(true)
     const [message, setMessage] = useState("")
     const [showComment, setShowComment] = useState(false)
     const [progress, setProgress] = useState(0)
@@ -28,15 +28,22 @@ function LoopCard({ loop, onProfileClick }) {
         if (video?.duration) setProgress((video.currentTime / video.duration) * 100)
     }
 
+    // ✅ FIXED: Play + Auto Unmute
     const handleClick = () => {
         const video = videoRef.current
         if (!video) return
+        
         if (isPlaying) {
             video.pause()
             setIsPlaying(false)
         } else {
             video.play().catch(() => {})
             setIsPlaying(true)
+            // ✅ AUTO UNMUTE WHEN USER CLICKS TO PLAY
+            if (videoRef.current) {
+                video.muted = false
+                setIsMuted(false)
+            }
         }
     }
 
@@ -53,32 +60,66 @@ function LoopCard({ loop, onProfileClick }) {
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [showComment])
 
+    // ✅ FIXED: IntersectionObserver - Auto play with sound
     useEffect(() => {
-        const observer = new IntersectionObserver(([entry]) => {
-            const video = videoRef.current
-            if (!video) return
+        let observer;
+        
+        const pauseAllOtherVideos = () => {
+            const allVideos = document.querySelectorAll('video');
+            allVideos.forEach(vid => {
+                if (vid !== videoRef.current) {
+                    vid.pause();
+                }
+            });
+        };
+
+        observer = new IntersectionObserver(([entry]) => {
+            const video = videoRef.current;
+            if (!video) return;
+
             if (entry.isIntersecting) {
-                video.play().catch(() => {})
-                setIsPlaying(true)
-                video.muted = false
+                video.play().catch(() => {});
+                setIsPlaying(true);
+                // ✅ AUTO UNMUTE ON VIEWPORT ENTRY
+                video.muted = false;
+                setIsMuted(false);
+                pauseAllOtherVideos();
             } else {
-                video.pause()
-                setIsPlaying(false)
+                video.pause();
+                setIsPlaying(false);
             }
-        }, { threshold: 0.6 })
+        }, { 
+            threshold: 0.7,
+            rootMargin: '-10% 0px -10% 0px'
+        });
 
-        if (videoRef.current) observer.observe(videoRef.current)
-        return () => {
-            if (videoRef.current) observer.unobserve(videoRef.current)
+        if (videoRef.current) {
+            observer.observe(videoRef.current);
         }
-    }, [])
 
+        return () => {
+            if (videoRef.current) {
+                observer.unobserve(videoRef.current);
+            }
+            observer?.disconnect();
+        };
+    }, []);
+
+    // ✅ FIXED: Mute toggle - ONLY manual toggle
+    const toggleMute = () => {
+        const newMutedState = !isMuted;
+        setIsMuted(newMutedState);
+        if (videoRef.current) {
+            videoRef.current.muted = newMutedState;
+        }
+    };
+
+    // Rest of functions same...
     const handleLike = async () => {
         try {
-            const result = await axios.get(`${serverUrl}/api/loop/like/${loop._id}`, { withCredentials: true })
-            const updatedLoop = result.data
-            const updatedLoops = loopData.map(p => p._id === loop._id ? updatedLoop : p)
-            dispatch(setLoopData(updatedLoops))
+            await axios.get(`${serverUrl}/api/loop/like/${loop._id}`, { withCredentials: true })
+            const result = await axios.get(`${serverUrl}/api/loop/getAll`, { withCredentials: true })
+            dispatch(setLoopData(result.data))
         } catch (error) {
             console.error("Like failed:", error)
         }
@@ -87,23 +128,15 @@ function LoopCard({ loop, onProfileClick }) {
     const handleLikeOnDoubleClick = () => {
         setShowHeart(true)
         setTimeout(() => setShowHeart(false), 600)
-
         if (!loop.likes?.includes(userData._id)) handleLike()
     }
 
     const handleComment = async () => {
         if (!message.trim()) return
         try {
-            const result = await axios.post(
-                `${serverUrl}/api/loop/comment/${loop._id}`,
-                { message },
-                { withCredentials: true }
-            )
-
-            const updatedLoop = result.data
-            const updatedLoops = loopData.map(p => p._id === loop._id ? updatedLoop : p)
-            dispatch(setLoopData(updatedLoops))
-
+            await axios.post(`${serverUrl}/api/loop/comment/${loop._id}`, { message }, { withCredentials: true })
+            const result = await axios.get(`${serverUrl}/api/loop/getAll`, { withCredentials: true })
+            dispatch(setLoopData(result.data))
             setMessage("")
         } catch (error) {
             console.error("Comment failed:", error)
@@ -113,14 +146,8 @@ function LoopCard({ loop, onProfileClick }) {
     const handleDeleteComment = async (commentId) => {
         try {
             await axios.delete(`${serverUrl}/api/loop/comment/${loop._id}/${commentId}`, { withCredentials: true })
-
-            const updatedLoops = loopData.map(p => {
-                if (p._id === loop._id)
-                    return { ...p, comments: p.comments.filter(c => c._id !== commentId) }
-                return p
-            })
-
-            dispatch(setLoopData(updatedLoops))
+            const result = await axios.get(`${serverUrl}/api/loop/getAll`, { withCredentials: true })
+            dispatch(setLoopData(result.data))
         } catch (error) {
             console.error("Delete comment failed:", error)
         }
@@ -129,8 +156,8 @@ function LoopCard({ loop, onProfileClick }) {
     const handleDeleteLoop = async () => {
         try {
             await axios.delete(`${serverUrl}/api/loop/${loop._id}`, { withCredentials: true })
-            const updatedLoops = loopData.filter(p => p._id !== loop._id)
-            dispatch(setLoopData(updatedLoops))
+            const result = await axios.get(`${serverUrl}/api/loop/getAll`, { withCredentials: true })
+            dispatch(setLoopData(result.data))
         } catch (error) {
             console.error("Delete loop failed:", error)
         }
@@ -157,19 +184,12 @@ function LoopCard({ loop, onProfileClick }) {
                     </button>
                 )}
 
-                {/* SOUND */}
-                <div
-                    onClick={() => {
-                        setIsMuted(prev => {
-                            if (videoRef.current) videoRef.current.muted = !prev
-                            return !prev
-                        })
-                    }}
-                    className="cursor-pointer"
-                >
-                    {!isMuted
+                {/* SOUND BUTTON */}
+                <div onClick={toggleMute} className="cursor-pointer">
+                    {!isMuted 
                         ? <FiVolume2 className='w-[20px] h-[20px] text-white font-semibold' />
-                        : <FiVolumeX className='w-[20px] h-[20px] text-white font-semibold' />}
+                        : <FiVolumeX className='w-[20px] h-[20px] text-white font-semibold' />
+                    }
                 </div>
             </div>
 
@@ -184,7 +204,7 @@ function LoopCard({ loop, onProfileClick }) {
 
                 <div className='w-full h-[350px] overflow-y-auto flex flex-col gap-[20px]'>
 
-                    {loop.comments.length === 0 && (
+                    {(!loop.comments || loop.comments.length === 0) && (
                         <div className='text-center text-white text-[20px] font-semibold mt-[50px]'>
                             No Comments Yet
                         </div>
@@ -193,24 +213,26 @@ function LoopCard({ loop, onProfileClick }) {
                     {loop.comments?.map((com, idx) => (
                         <div
                             className='w-full flex flex-col gap-[5px] border-b-[1px] border-gray-800 pb-[10px] mt-[10px]'
-                            key={idx}
+                            key={com._id || idx}
                         >
                             <div className='flex items-center gap-[10px]'>
 
-                                {/* CLICKABLE COMMENT USER DP */}
                                 <div
                                     className='w-[30px] h-[30px] md:w-[40px] md:h-[40px] border-2 border-gray-300 rounded-full overflow-hidden cursor-pointer'
                                     onClick={() => onProfileClick(com.author?.userName)}
                                 >
-                                    <img src={com.author?.profileImage || dp} className='w-full h-full object-cover' />
+                                    <img 
+                                        src={com.author?.profileImage || dp} 
+                                        className='w-full h-full object-cover'
+                                        alt="Profile"
+                                    />
                                 </div>
 
-                                {/* CLICKABLE USERNAME */}
                                 <div
                                     className='font-semibold text-white truncate max-w-[120px] md:max-w-[150px] cursor-pointer'
                                     onClick={() => onProfileClick(com.author?.userName)}
                                 >
-                                    {com?.author?.userName}
+                                    {com?.author?.userName || 'Unknown'}
                                 </div>
 
                                 {com.author?._id === userData._id && (
@@ -228,7 +250,7 @@ function LoopCard({ loop, onProfileClick }) {
                     ))}
                 </div>
 
-                <div className='w-full h-[80px] flex items-center justify-between px-[10px] fixed bottom-0'>
+                <div className='w-full h-[80px] flex items-center justify-between px-[10px] bg-[#0e1718] pt-4'>
                     <div className='w-[40px] h-[40px] md:w-14 md:h-14 border-2 border-gray-300 rounded-full overflow-hidden'>
                         <img src={userData.profileImage || dp} className='w-full h-full object-cover' />
                     </div>
@@ -252,7 +274,6 @@ function LoopCard({ loop, onProfileClick }) {
             {/* VIDEO */}
             <video
                 ref={videoRef}
-                autoPlay
                 muted={isMuted}
                 loop
                 src={loop?.media}
@@ -260,14 +281,14 @@ function LoopCard({ loop, onProfileClick }) {
                 onClick={handleClick}
                 onTimeUpdate={HandleTimeUpdate}
                 onDoubleClick={handleLikeOnDoubleClick}
-            ></video>
+            />
 
             {/* PROGRESS BAR */}
             <div className='absolute bottom-0 w-full h-[3px] bg-gray-900'>
                 <div
                     className='h-full bg-white transition-all duration-200 ease-linear'
                     style={{ width: `${progress}%` }}
-                ></div>
+                />
             </div>
 
             {/* BOTTOM INFO */}
@@ -288,7 +309,6 @@ function LoopCard({ loop, onProfileClick }) {
                         {loop?.author?.userName}
                     </div>
 
-                    {/* FOLLOW BUTTON (HIDE IF OWN REEL) */}
                     {loop.author?._id !== userData._id && (
                         <FollowButton
                             targetUserId={loop.author?._id}
@@ -301,7 +321,6 @@ function LoopCard({ loop, onProfileClick }) {
 
                 <div className='absolute right-0 flex flex-col gap-[20px] text-white bottom-[150px] p-[10px]'>
 
-                    {/* LIKE */}
                     <div className='flex flex-col items-center cursor-pointer'>
                         <div onClick={handleLike}>
                             {!loop.likes.includes(userData._id)
@@ -311,7 +330,6 @@ function LoopCard({ loop, onProfileClick }) {
                         <div>{loop.likes.length}</div>
                     </div>
 
-                    {/* COMMENT BUTTON */}
                     <div className='flex flex-col items-center cursor-pointer'>
                         <div onClick={() => setShowComment(true)}>
                             <FaRegComment className="w-[25px] h-[25px]" />
