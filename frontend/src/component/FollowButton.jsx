@@ -15,7 +15,7 @@ function FollowButton({targetUserId,tailwind,onFollowChange}) {
             if(onFollowChange){
                 onFollowChange()
             }
-        } catch (error)  {
+        } catch (error) {
             console.error("Follow failed:", error)
         }
     }
