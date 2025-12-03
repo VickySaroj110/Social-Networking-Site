@@ -1,5 +1,5 @@
 import React from "react";
-import {  useDispatch } from "react-redux";
+import { useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { setSelectedUser } from "../redux/messageSlice";
 import useMutualFriends from "../hooks/getMutualFriends";
@@ -17,16 +17,15 @@ function RightSide() {
     navigate("/messageArea");
   };
 
-  // Check if a user is online
   const isUserOnline = (userId) => {
     return onlineUsers.some((onlineUser) => onlineUser._id === userId);
   };
 
   return (
-    <div className="w-[25%] hidden lg:block min-h-[100vh] bg-black border-l-2 border-gray-900">
-      <div className="w-full h-full">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-700">
+    <div className="w-[25%] hidden lg:block h-screen bg-black border-l-2 border-gray-900 overflow-hidden">
+      <div className="w-full h-full flex flex-col">
+        {/* Header - fixed height */}
+        <div className="p-4 border-b border-gray-700 flex-shrink-0">
           <div className="flex items-center gap-2 mb-3">
             <div
               className={`w-3 h-3 rounded-full ${
@@ -37,11 +36,13 @@ function RightSide() {
               Friends ({mutualFriends.length})
             </h3>
           </div>
-          {!connected && <p className="text-sm text-gray-400">Connecting...</p>}
+          {!connected && (
+            <p className="text-sm text-gray-400">Connecting...</p>
+          )}
         </div>
 
-        {/* Friends List */}
-        <div className="overflow-y-auto h-full pb-20">
+        {/* Friends List - only this scrolls */}
+        <div className="flex-1 overflow-y-auto pb-4">
           {loading ? (
             <div className="p-4 text-center text-gray-400">
               Loading friends...
@@ -64,7 +65,6 @@ function RightSide() {
                         className="w-full h-full object-cover"
                       />
                     </div>
-                    {/* Online indicator */}
                     {isOnline && (
                       <div className="w-4 h-4 bg-green-500 rounded-full absolute -bottom-1 -right-1 border-2 border-black"></div>
                     )}
