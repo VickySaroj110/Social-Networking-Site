@@ -15,7 +15,6 @@ import { useDispatch } from "react-redux";
 import EditProfile from "./pages/EditProfile";
 import Upload from "./pages/Upload";
 import getAllpost from "./hooks/getAllpost";
-
 import getAllLoops from "./hooks/getAllLoops";
 import axios from "axios";
 import Loops from "./pages/Loops";
@@ -23,6 +22,7 @@ import Story from "./pages/Story";
 import getAllStories from "./hooks/getAllStories";
 import Messages from "./pages/Messages";
 import MessageArea from "./pages/MessageArea";
+import Search from "./component/Search";
 
 export const serverUrl = "http://localhost:8000";
 function App() {
@@ -57,8 +57,6 @@ function App() {
   const { userData } = useSelector((state) => state.user);
   return (
     <div className="relative w-full h-screen overflow-hidden">
-      {/* {transitions((style, location) => (
-        <animated.div style={style} className="absolute top-0 left-0 w-full h-full"> */}
       <Routes location={location}>
         <Route
           path="/signup"
@@ -104,10 +102,11 @@ function App() {
           path="/messageArea"
           element={userData ? <MessageArea /> : <Navigate to={"/signin"} />}
         />
+        <Route
+          path="/search"
+          element={userData ? <Search /> : <Navigate to={"/signin"} />}
+        />
       </Routes>
-
-      {/* </animated.div>
-      ))} */}
     </div>
   );
 }
