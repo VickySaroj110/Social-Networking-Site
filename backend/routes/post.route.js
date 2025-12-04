@@ -20,7 +20,10 @@ postRouter.get("/savedPosts", isAuth, async (req, res) => {
   try {
     const user = await User.findById(req.userId).populate({
       path: "saved",
-      populate: { path: "author", select: "name userName profileImage" },
+      populate: [
+        { path: "author", select: "name userName profileImage" },
+        { path: "comments.author", select: "name userName profileImage" }
+      ],
     });
 
     res.status(200).json(user.saved);
