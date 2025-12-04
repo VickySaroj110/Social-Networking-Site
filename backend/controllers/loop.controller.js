@@ -35,13 +35,30 @@ export const uploadLoop = async (req, res) => {
   }
 };
 
-// Get All Loops
+// Get All Loops with Pagination
 export const getAllLoops = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
     const loops = await Loop.find({})
       .populate("author", "name userName profileImage")
-      .populate("comments.author", "name userName profileImage");
-    return res.status(200).json(loops);
+      .populate("comments.author", "name userName profileImage")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalLoops = await Loop.countDocuments({});
+    const totalPages = Math.ceil(totalLoops / limit);
+
+    return res.status(200).json({
+      loops,
+      totalLoops,
+      totalPages,
+      currentPage: page,
+      hasMore: page < totalPages,
+    });
   } catch (error) {
     console.error("getAllLoops error:", error);
     return res.status(500).json({ message: `getAllLoops error ${error}` });

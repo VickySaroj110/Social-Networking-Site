@@ -33,11 +33,20 @@ function Post({ post, onUpdate }) {
     const handleLike = async () => {
         try {
             await axios.get(`${serverUrl}/api/post/like/${post._id}`, { withCredentials: true });
-            // Refetch ALL posts with complete data
-            const result = await axios.get(`${serverUrl}/api/post/getAll`, { withCredentials: true });
-            dispatch(setPostData(result.data));
+            // Update local post state instead of refetching all
+            const updatedPost = {
+                ...post,
+                likes: post.likes?.includes(userData._id)
+                    ? post.likes.filter(id => id !== userData._id)
+                    : [...(post.likes || []), userData._id]
+            };
             
-            if(onUpdate) onUpdate(result.data.find(p => p._id === post._id));
+            const updatedPostData = postData.map(p => 
+                p._id === post._id ? updatedPost : p
+            );
+            dispatch(setPostData(updatedPostData));
+            
+            if(onUpdate) onUpdate(updatedPost);
         } catch (error) {
             console.error(error);
         }
@@ -47,19 +56,21 @@ function Post({ post, onUpdate }) {
     const handleComment = async () => {
         if(message.trim() === "") return;
         try {
-            await axios.post(
+            const commentRes = await axios.post(
                 `${serverUrl}/api/post/comment/${post._id}`,
                 { message },
                 { withCredentials: true }
             );
             
-            // Refetch ALL posts with complete data
-            const result = await axios.get(`${serverUrl}/api/post/getAll`, { withCredentials: true });
-            dispatch(setPostData(result.data));
+            // Update local post state instead of refetching all
+            const updatedPostData = postData.map(p => 
+                p._id === post._id ? commentRes.data : p
+            );
+            dispatch(setPostData(updatedPostData));
             setMessage("");
             setshowComment(true);
 
-            if(onUpdate) onUpdate(result.data.find(p => p._id === post._id));
+            if(onUpdate) onUpdate(commentRes.data);
         } catch (error) {
             console.error(error);
         }
@@ -96,8 +107,9 @@ function Post({ post, onUpdate }) {
         try {
             const res = await axios.delete(`${serverUrl}/api/post/delete/${postId}`, { withCredentials: true });
             
-            const result = await axios.get(`${serverUrl}/api/post/getAll`, { withCredentials: true });
-            dispatch(setPostData(result.data));
+            // Remove post from Redux instead of refetching all
+            const updatedPostData = postData.filter(p => p._id !== postId);
+            dispatch(setPostData(updatedPostData));
             toast.success(res.data.message);
 
             if(onUpdate) onUpdate(null);
@@ -114,10 +126,19 @@ function Post({ post, onUpdate }) {
                 { withCredentials: true }
             );
             
-            const result = await axios.get(`${serverUrl}/api/post/getAll`, { withCredentials: true });
-            dispatch(setPostData(result.data));
+            // Update local post state instead of refetching all
+            const updatedPostData = postData.map(p => {
+                if (p._id === postId) {
+                    return {
+                        ...p,
+                        comments: p.comments.filter(c => c._id !== commentId)
+                    };
+                }
+                return p;
+            });
+            dispatch(setPostData(updatedPostData));
 
-            if(onUpdate) onUpdate(result.data.find(p => p._id === postId));
+            if(onUpdate) onUpdate(updatedPostData.find(p => p._id === postId));
         } catch (error) {
             console.error(error);
             toast.error("Error deleting comment");
@@ -194,7 +215,11 @@ function Post({ post, onUpdate }) {
                 </div>
 
                 <div onClick={handleSaved}>
-                    <FaRegBookmark className="w-[25px] cursor-pointer h-[25px]" />
+                    {userData.saved?.includes(post._id) ? (
+                        <FaBookmark className="w-[25px] cursor-pointer h-[25px] text-yellow-500" />
+                    ) : (
+                        <FaRegBookmark className="w-[25px] cursor-pointer h-[25px]" />
+                    )}
                 </div>
             </div>
 
