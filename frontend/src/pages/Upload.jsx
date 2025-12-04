@@ -58,7 +58,8 @@ function Upload() {
             formData.append("mediaType", mediaType)
             formData.append("media", backendMedia)
             const result = await axios.post(`${serverUrl}/api/post/upload`, formData, { withCredentials: true })
-            dispatch(setPostData([result.data.post]))
+            // Backend returns populatedPost directly, prepend to existing posts
+            dispatch(setPostData([result.data, ...postData]))
             navigate("/")
         } catch (error) {
             console.log(error)
