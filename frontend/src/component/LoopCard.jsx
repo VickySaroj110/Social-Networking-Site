@@ -60,7 +60,7 @@ function LoopCard({ loop, onProfileClick }) {
         return () => document.removeEventListener("mousedown", handleClickOutside)
     }, [showComment])
 
-    // ✅ FIXED: IntersectionObserver - Auto play with sound
+    // ✅ FIXED: IntersectionObserver - Auto play with sound ONLY when visible
     useEffect(() => {
         let observer;
         
@@ -69,6 +69,7 @@ function LoopCard({ loop, onProfileClick }) {
             allVideos.forEach(vid => {
                 if (vid !== videoRef.current) {
                     vid.pause();
+                    vid.muted = true; // Mute other videos
                 }
             });
         };
@@ -77,19 +78,23 @@ function LoopCard({ loop, onProfileClick }) {
             const video = videoRef.current;
             if (!video) return;
 
-            if (entry.isIntersecting) {
+            // Only autoplay and unmute if the video is actually visible in viewport
+            if (entry.isIntersecting && entry.intersectionRatio >= 0.7) {
                 video.play().catch(() => {});
                 setIsPlaying(true);
-                // ✅ AUTO UNMUTE ON VIEWPORT ENTRY
+                // ✅ AUTO UNMUTE ON VIEWPORT ENTRY (70% visible)
                 video.muted = false;
                 setIsMuted(false);
                 pauseAllOtherVideos();
             } else {
                 video.pause();
                 setIsPlaying(false);
+                // ✅ MUTE when not in view
+                video.muted = true;
+                setIsMuted(true);
             }
         }, { 
-            threshold: 0.7,
+            threshold: [0, 0.5, 0.7, 1],
             rootMargin: '-10% 0px -10% 0px'
         });
 
