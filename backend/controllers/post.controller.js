@@ -1,6 +1,8 @@
 import uploadOnCloudinary from "../config/cloudinary.js";
 import Post from "../models/post.model.js";
 import User from "../models/user.model.js";
+import Notification from "../models/notification.model.js";
+import { io } from "../config/socket.js";
 
 export const uploadPost = async (req, res) => {
   try {
@@ -67,6 +69,32 @@ export const like = async (req, res) => {
       );
     } else {
       post.likes.push(req.userId);
+      
+      // Create notification when someone likes the post
+      if (post.author.toString() !== req.userId.toString()) {
+        const liker = await User.findById(req.userId);
+        const notification = await Notification.create({
+          recipient: post.author,
+          sender: req.userId,
+          type: "post_like",
+          postId: postId,
+          message: `${liker.userName} liked your post`,
+        });
+
+        // Emit notification via socket
+        io.to(post.author.toString()).emit("newNotification", {
+          _id: notification._id,
+          sender: {
+            _id: liker._id,
+            userName: liker.userName,
+            profileImage: liker.profileImage,
+          },
+          type: "post_like",
+          message: `${liker.userName} liked your post`,
+          read: false,
+          createdAt: notification.createdAt,
+        });
+      }
     }
 
     await post.save();

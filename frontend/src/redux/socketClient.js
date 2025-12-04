@@ -62,11 +62,12 @@ export const connectSocket = (userId, dispatch) => {
 
     // Optional: Show browser notification if supported
     if ("Notification" in window) {
+      const notificationBody = notification.reelId?.caption || notification.postId?.caption || "Check it out!";
       if (Notification.permission === "granted") {
         new Notification(
           `${notification.sender?.userName} ${notification.message}`,
           {
-            body: notification.reelId?.caption || "Check it out!",
+            body: notificationBody,
             icon: notification.sender?.profileImage || "/default-avatar.png",
           }
         );
@@ -76,7 +77,7 @@ export const connectSocket = (userId, dispatch) => {
             new Notification(
               `${notification.sender?.userName} ${notification.message}`,
               {
-                body: notification.reelId?.caption || "Check it out!",
+                body: notificationBody,
                 icon:
                   notification.sender?.profileImage || "/default-avatar.png",
               }

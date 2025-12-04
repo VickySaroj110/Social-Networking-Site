@@ -156,6 +156,15 @@ function Notifications() {
                       "
                     </span>
                   )}
+                  {notification.postId?.caption && (
+                    <span className="ml-1 text-gray-400">
+                      "
+                      {notification.postId.caption.length > 30
+                        ? notification.postId.caption.substring(0, 30) + "..."
+                        : notification.postId.caption}
+                      "
+                    </span>
+                  )}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                   <FaHeart className="text-red-500 w-3 h-3" />

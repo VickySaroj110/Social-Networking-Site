@@ -14,13 +14,16 @@ const notificationSchema = new mongoose.Schema(
     },
     type: {
       type: String,
-      enum: ["reel_like"],
+      enum: ["reel_like", "post_like"],
       required: true,
     },
     reelId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Loop",
-      required: true,
+    },
+    postId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Post",
     },
     message: {
       type: String,
