@@ -2,10 +2,11 @@ import React, { useEffect, useRef, useState } from 'react'
 import { FiVolume2, FiVolumeX } from 'react-icons/fi'
 import dp from "../assets/dp.png"
 import FollowButton from './FollowButton'
-import { FaHeart, FaRegHeart, FaRegComment, FaRegPaperPlane } from "react-icons/fa"
+import { FaHeart, FaRegHeart, FaRegComment, FaRegPaperPlane, FaBookmark, FaRegBookmark } from "react-icons/fa"
 import { useDispatch, useSelector } from 'react-redux'
 import { serverUrl } from '../App'
 import { setLoopData } from '../redux/loopSlice'
+import { setUserData } from '../redux/userSlice'
 import axios from 'axios'
 
 function LoopCard({ loop, onProfileClick }) {
@@ -155,6 +156,17 @@ function LoopCard({ loop, onProfileClick }) {
             dispatch(setLoopData(result.data))
         } catch (error) {
             console.error("Delete comment failed:", error)
+        }
+    }
+
+    const handleSaveLoop = async () => {
+        try {
+            await axios.get(`${serverUrl}/api/loop/save/${loop._id}`, { withCredentials: true })
+            // Refetch user data to update savedLoops in redux
+            const userResult = await axios.get(`${serverUrl}/api/user/currentuser`, { withCredentials: true })
+            dispatch(setUserData(userResult.data))
+        } catch (error) {
+            console.error("Save loop failed:", error)
         }
     }
 
@@ -340,6 +352,13 @@ function LoopCard({ loop, onProfileClick }) {
                             <FaRegComment className="w-[25px] h-[25px]" />
                         </div>
                         <div><span>{loop.comments.length}</span></div>
+                    </div>
+
+                    <div className='flex flex-col items-center cursor-pointer' onClick={handleSaveLoop}>
+                        {!userData.savedLoops?.includes(loop?._id)
+                            ? <FaRegBookmark className="w-[25px] h-[25px]" />
+                            : <FaBookmark className="w-[25px] h-[25px]" />
+                        }
                     </div>
 
                 </div>

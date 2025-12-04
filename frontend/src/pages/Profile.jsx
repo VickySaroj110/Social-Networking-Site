@@ -16,6 +16,7 @@ import LoopCard from '../component/LoopCard'
 function Profile() {
   const [activeTab, setActiveTab] = useState("posts")
   const [savedPosts, setSavedPosts] = useState([])
+  const [savedLoops, setSavedLoops] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [modalType, setModalType] = useState("followers")
 
@@ -52,9 +53,25 @@ function Profile() {
     } catch (error) { console.log(error) }
   }
 
+  // Fetch saved loops of current logged-in user only
+  const fetchSavedLoops = async () => {
+    try {
+      const res = await axios.get(
+        `${serverUrl}/api/loop/savedLoops`,
+        { withCredentials: true }
+      )
+      if (profileData?._id === userData._id) {
+        setSavedLoops(res.data)
+      } else {
+        setSavedLoops([])
+      }
+    } catch (error) { console.log(error) }
+  }
+
   useEffect(() => {
     handleProfile()
     fetchSavedPosts()
+    fetchSavedLoops()
   }, [userName, profileData?._id])
 
   const handleLogOut = async () => {
@@ -74,10 +91,28 @@ function Profile() {
     loop => String(loop.author?._id) === String(profileData?._id)
   )
 
-  // Refresh a single post in savedPosts after like/comment/delete
+  // Refresh a single post in savedPosts after like/comment/delete or remove if unsaved
   const handleSavedPostUpdate = (updatedPost) => {
-    setSavedPosts(prev => prev.map(p => p._id === updatedPost._id ? updatedPost : p))
+    if (updatedPost === null) {
+      // Post was unsaved, refetch to get updated list
+      fetchSavedPosts()
+    } else {
+      // Post was updated, refresh it
+      setSavedPosts(prev => prev.map(p => p._id === updatedPost._id ? updatedPost : p))
+    }
   }
+
+  // Refresh a single loop in savedLoops after like/comment/delete
+  const handleSavedLoopUpdate = (updatedLoop) => {
+    setSavedLoops(prev => prev.map(l => l._id === updatedLoop._id ? updatedLoop : l))
+  }
+
+  // Auto-refresh saved loops when loopData changes
+  useEffect(() => {
+    if (activeTab === "saved" && loopData.length > 0) {
+      fetchSavedLoops()
+    }
+  }, [loopData])
 
   return (
     <div className='w-full h-screen overflow-y-auto bg-black'>
@@ -208,7 +243,7 @@ function Profile() {
       <div className='w-full min-h-[50vh] flex justify-center mt-4'>
         <div
           className={`w-full max-w-[900px] flex flex-col items-center rounded-t-[30px] relative gap-[20px] pt-[16px] pb-[40px] 
-          ${activeTab === "reels" ? "bg-[#1a1a1a]" : "bg-white"}`}
+          ${activeTab === "reels" || activeTab === "saved" ? "bg-[#1a1a1a]" : "bg-white"}`}
         >
 
           {/* POSTS */}
@@ -242,12 +277,24 @@ function Profile() {
             </div>
           ))}
 
-          {/* SAVED POSTS */}
-          {activeTab === "saved" && savedPosts.length === 0 && (
-            <h2 className='text-gray-500 text-lg my-10'>No saved posts</h2>
+          {/* SAVED POSTS AND REELS */}
+          {activeTab === "saved" && savedPosts.length === 0 && savedLoops.length === 0 && (
+            <h2 className='text-gray-500 text-lg my-10'>No saved posts or reels</h2>
           )}
+          
+          {/* Display Saved Posts */}
           {activeTab === "saved" && savedPosts.map((post, index) => (
-            <Post key={index} post={post} onUpdate={handleSavedPostUpdate} />
+            <Post key={`post-${index}`} post={post} onUpdate={handleSavedPostUpdate} />
+          ))}
+
+          {/* Display Saved Loops/Reels */}
+          {activeTab === "saved" && savedLoops.map((loop, index) => (
+            <div key={`loop-${index}`} className="w-full flex justify-center items-center">
+              <LoopCard
+                loop={loop}
+                onProfileClick={(u) => navigate(`/profile/${u}`)}
+              />
+            </div>
           ))}
 
         </div>

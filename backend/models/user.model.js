@@ -52,6 +52,12 @@ const userSchema = new mongoose.Schema({
             ref: "Post"  // ✅ corrected ref from User to Post
         }
     ],
+    savedLoops: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Loop"
+        }
+    ],
     loops: [
         {
             type: mongoose.Schema.Types.ObjectId,

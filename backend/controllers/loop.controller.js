@@ -208,3 +208,41 @@ export const deleteLoop = async (req, res) => {
       .json({ message: `delete loop error ${error.message}` });
   }
 };
+
+// Save / Unsave Loop
+export const saveLoop = async (req, res) => {
+  try {
+    const { loopId } = req.params;
+    const user = await User.findById(req.userId);
+    const loop = await Loop.findById(loopId);
+
+    if (!loop) {
+      return res.status(400).json({ message: "loop not found" });
+    }
+
+    const alreadySaved = user.savedLoops.some(
+      (id) => id.toString() === loopId.toString()
+    );
+
+    if (alreadySaved) {
+      user.savedLoops = user.savedLoops.filter(
+        (id) => id.toString() !== loopId.toString()
+      );
+    } else {
+      user.savedLoops.push(loopId);
+    }
+
+    await user.save();
+    await user.populate({
+      path: "savedLoops",
+      populate: [
+        { path: "author", select: "name userName profileImage" },
+        { path: "comments.author", select: "name userName profileImage" }
+      ],
+    });
+
+    return res.status(200).json(user.savedLoops);
+  } catch (error) {
+    return res.status(500).json({ message: `save loop error ${error}` });
+  }
+};

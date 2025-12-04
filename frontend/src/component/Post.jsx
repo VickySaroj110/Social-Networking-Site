@@ -71,6 +71,8 @@ function Post({ post, onUpdate }) {
             await axios.get(`${serverUrl}/api/post/saved/${post._id}`, { withCredentials: true });
 
             let updatedSaved = [...userData.saved];
+            const isSaving = !updatedSaved.includes(post._id);
+            
             if (updatedSaved.includes(post._id)) {
                 updatedSaved = updatedSaved.filter(id => id !== post._id);
             } else {
@@ -82,7 +84,8 @@ function Post({ post, onUpdate }) {
                 saved: updatedSaved
             }));
 
-            if(onUpdate) onUpdate({ ...post });
+            // Pass null if unsaving, so Profile can remove it from savedPosts
+            if(onUpdate) onUpdate(isSaving ? { ...post } : null);
         } catch (error) {
             console.error(error);
         }
@@ -191,11 +194,7 @@ function Post({ post, onUpdate }) {
                 </div>
 
                 <div onClick={handleSaved}>
-                    {!userData.saved.includes(post?._id) ? (
-                        <FaRegBookmark className="w-[25px] cursor-pointer h-[25px]" />
-                    ) : (
-                        <FaBookmark className="w-[25px] cursor-pointer h-[25px]" />
-                    )}
+                    <FaRegBookmark className="w-[25px] cursor-pointer h-[25px]" />
                 </div>
             </div>
 
