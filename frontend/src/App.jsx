@@ -8,6 +8,7 @@ import { useSelector } from "react-redux";
 import getCurrentUser from "./hooks/getCurrentUser";
 import getSuggestedUser from "./hooks/getSuggestedUser";
 import useGetOnlineUser from "./hooks/getAllOnlineUsers";
+import useNotifications from "./hooks/useNotifications";
 import Profile from "./pages/Profile";
 import { useTransition, animated } from "@react-spring/web";
 import { setUserData } from "./redux/userSlice";
@@ -54,6 +55,7 @@ function App() {
   getAllLoops();
   getAllStories();
   const { onlineUsers } = useGetOnlineUser(); // Initialize socket connection
+  useNotifications(); // Initialize notifications
   const { userData } = useSelector((state) => state.user);
   return (
     <div className="relative w-full h-screen overflow-hidden">

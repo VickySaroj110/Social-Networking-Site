@@ -10,6 +10,7 @@ import postRouter from "./routes/post.route.js";
 import loopRouter from "./routes/loop.route.js";
 import storyRouter from "./routes/story.route.js";
 import messageRouter from "./routes/message.route.js";
+import notificationRouter from "./routes/notification.route.js";
 
 import { app, server } from "./config/socket.js";
 
@@ -33,6 +34,7 @@ app.use("/api/post", postRouter);
 app.use("/api/loop", loopRouter);
 app.use("/api/story", storyRouter);
 app.use("/api/message", messageRouter);
+app.use("/api/notification", notificationRouter);
 
 // Test route
 app.get("/", (req, res) => {

@@ -1,5 +1,6 @@
 import { createSlice } from "@reduxjs/toolkit";
 import { io } from "socket.io-client";
+import { addNotification } from "./notificationSlice";
 
 // Socket instance
 let socket = null;
@@ -52,6 +53,38 @@ export const connectSocket = (userId, dispatch) => {
   socket.on("getOnlineUsers", (users) => {
     console.log("📥 Online users received from server:", users);
     dispatch(setOnlineUsers(users));
+  });
+
+  // Listen for new notifications
+  socket.on("newNotification", (notification) => {
+    console.log("🔔 New notification received:", notification);
+    dispatch(addNotification(notification));
+
+    // Optional: Show browser notification if supported
+    if ("Notification" in window) {
+      if (Notification.permission === "granted") {
+        new Notification(
+          `${notification.sender?.userName} ${notification.message}`,
+          {
+            body: notification.reelId?.caption || "Check it out!",
+            icon: notification.sender?.profileImage || "/default-avatar.png",
+          }
+        );
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then((permission) => {
+          if (permission === "granted") {
+            new Notification(
+              `${notification.sender?.userName} ${notification.message}`,
+              {
+                body: notification.reelId?.caption || "Check it out!",
+                icon:
+                  notification.sender?.profileImage || "/default-avatar.png",
+              }
+            );
+          }
+        });
+      }
+    }
   });
 
   socket.on("connect_error", (error) => {
