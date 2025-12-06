@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import { FaRegHeart } from "react-icons/fa6";
-import logo from "../assets/logo.png"
+import psync from "../assets/psync.png"
 import StoryDp from './StoryDp';
 import Nav from './Nav';
 import Post from './Post';
@@ -39,7 +39,7 @@ function Feed() {
 
       {/* Top Nav */}
       <div className='w-full h-[100px] flex items-center justify-between p-[20px] lg:hidden'>
-        <img src={logo} alt="" className='w-[40px]' />
+        <img src={psync} alt="" className='w-[40px]' />
         <div className='flex items-center gap-[10px]'>
           <FaRegHeart className='text-white w-[25px] h-[25px]' />
           <BiMessageAltDetail
