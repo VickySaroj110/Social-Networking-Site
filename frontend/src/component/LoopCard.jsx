@@ -9,7 +9,7 @@ import { setLoopData } from '../redux/loopSlice'
 import { setUserData } from '../redux/userSlice'
 import axios from 'axios'
 
-function LoopCard({ loop, onProfileClick }) {
+function LoopCard({ loop, onProfileClick, onLoopUpdate }) {
     const videoRef = useRef()
     const commentRef = useRef()
     const dispatch = useDispatch()
@@ -141,6 +141,10 @@ function LoopCard({ loop, onProfileClick }) {
                 l._id === loop._id ? updatedLoop : l
             )
             dispatch(setLoopData(updatedLoopData))
+            // Call callback if provided (for Profile page)
+            if (onLoopUpdate) {
+                onLoopUpdate(updatedLoop)
+            }
         } catch (error) {
             console.error("Like failed:", error)
         }
@@ -161,6 +165,10 @@ function LoopCard({ loop, onProfileClick }) {
                 l._id === loop._id ? commentRes.data : l
             )
             dispatch(setLoopData(updatedLoopData))
+            // Call callback if provided (for Profile page)
+            if (onLoopUpdate) {
+                onLoopUpdate(commentRes.data)
+            }
             setMessage("")
         } catch (error) {
             console.error("Comment failed:", error)
@@ -179,6 +187,10 @@ function LoopCard({ loop, onProfileClick }) {
                 l._id === loop._id ? updatedLoop : l
             )
             dispatch(setLoopData(updatedLoopData))
+            // Call callback if provided (for Profile page)
+            if (onLoopUpdate) {
+                onLoopUpdate(updatedLoop)
+            }
         } catch (error) {
             console.error("Delete comment failed:", error)
         }

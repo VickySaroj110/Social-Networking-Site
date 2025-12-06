@@ -17,6 +17,7 @@ function Profile() {
   const [activeTab, setActiveTab] = useState("posts")
   const [savedPosts, setSavedPosts] = useState([])
   const [savedLoops, setSavedLoops] = useState([])
+  const [userReelsLoaded, setUserReelsLoaded] = useState([])
   const [showModal, setShowModal] = useState(false)
   const [modalType, setModalType] = useState("followers")
 
@@ -68,11 +69,33 @@ function Profile() {
     } catch (error) { console.log(error) }
   }
 
+  // Fetch ALL user's reels (for profile page - no pagination)
+  const fetchUserReels = async () => {
+    try {
+      const res = await axios.get(
+        `${serverUrl}/api/loop/userLoops/${profileData?._id}`,
+        { withCredentials: true }
+      )
+      console.log("User reels fetched:", res.data)
+      setUserReelsLoaded(res.data)
+    } catch (error) { 
+      console.log("Error fetching user reels:", error)
+      setUserReelsLoaded([])
+    }
+  }
+
   useEffect(() => {
     handleProfile()
     fetchSavedPosts()
     fetchSavedLoops()
   }, [userName, profileData?._id])
+
+  // Fetch user reels whenever profileData changes
+  useEffect(() => {
+    if (profileData?._id) {
+      fetchUserReels()
+    }
+  }, [profileData?._id])
 
   const handleLogOut = async () => {
     try {
@@ -86,10 +109,8 @@ function Profile() {
     post => String(post.author?._id) === String(profileData?._id)
   )
 
-  // ALL USER REELS
-  const userReels = loopData.filter(
-    loop => String(loop.author?._id) === String(profileData?._id)
-  )
+  // ALL USER REELS - use direct fetch instead of global state
+  const userReels = userReelsLoaded
 
   // Refresh a single post in savedPosts after like/comment/delete or remove if unsaved
   const handleSavedPostUpdate = (updatedPost) => {
@@ -105,6 +126,11 @@ function Profile() {
   // Refresh a single loop in savedLoops after like/comment/delete
   const handleSavedLoopUpdate = (updatedLoop) => {
     setSavedLoops(prev => prev.map(l => l._id === updatedLoop._id ? updatedLoop : l))
+  }
+
+  // Update user reel after like/comment
+  const handleUserReelUpdate = (updatedLoop) => {
+    setUserReelsLoaded(prev => prev.map(l => l._id === updatedLoop._id ? updatedLoop : l))
   }
 
   // Auto-refresh saved loops when loopData changes
@@ -273,6 +299,7 @@ function Profile() {
               <LoopCard
                 loop={loop}
                 onProfileClick={(u) => navigate(`/profile/${u}`)}
+                onLoopUpdate={handleUserReelUpdate}
               />
             </div>
           ))}
