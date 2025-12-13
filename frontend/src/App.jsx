@@ -24,6 +24,8 @@ import getAllStories from "./hooks/getAllStories";
 import Messages from "./pages/Messages";
 import MessageArea from "./pages/MessageArea";
 import Search from "./component/Search";
+import Tweets from "./pages/Tweets"; // ✅ ADD
+import TweetDetail from "./pages/TweetDetail"; // ✅ ADD
 
 export const serverUrl = "http://localhost:8000";
 function App() {
@@ -37,11 +39,12 @@ function App() {
         });
         dispatch(setUserData(res.data));
       } catch (error) {
-        dispatch(setUserData(null)); // no logged in user
+        dispatch(setUserData(null));
       }
     };
     fetchUser();
   }, [dispatch]);
+
   const location = useLocation();
   const transitions = useTransition(location, {
     from: { opacity: 0, transform: "translateX(100%)" },
@@ -49,14 +52,16 @@ function App() {
     leave: { opacity: 0, transform: "translateX(-50%)" },
     config: { duration: 400 },
   });
+
   getCurrentUser();
   getSuggestedUser();
   getAllpost();
   getAllLoops();
   getAllStories();
-  const { onlineUsers } = useGetOnlineUser(); // Initialize socket connection
-  useNotifications(); // Initialize notifications
+  const { onlineUsers } = useGetOnlineUser();
+  useNotifications();
   const { userData } = useSelector((state) => state.user);
+
   return (
     <div className="relative w-full h-screen overflow-hidden">
       <Routes location={location}>
@@ -75,6 +80,14 @@ function App() {
         <Route
           path="/"
           element={userData ? <Home /> : <Navigate to={"/signin"} />}
+        />
+        <Route
+          path="/tweets"
+          element={userData ? <Tweets /> : <Navigate to={"/signin"} />}
+        />
+        <Route
+          path="/tweet/:tweetId"
+          element={userData ? <TweetDetail /> : <Navigate to={"/signin"} />}
         />
         <Route
           path="/profile/:userName"

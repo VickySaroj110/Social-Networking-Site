@@ -5,20 +5,20 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 
 import authRouter from "./routes/auth.js";
-import userRouter from "./routes/user.route.js"; // ✅ fixed import
+import userRouter from "./routes/user.route.js";
 import postRouter from "./routes/post.route.js";
 import loopRouter from "./routes/loop.route.js";
 import storyRouter from "./routes/story.route.js";
 import messageRouter from "./routes/message.route.js";
 import notificationRouter from "./routes/notification.route.js";
-
+import tweetRouter from "./routes/tweet.route.js"; // ✅ ADD
 import { app, server } from "./config/socket.js";
 
 dotenv.config();
 
 let port = process.env.PORT || 8000;
 
-app.use(express.json()); // middleware for JSON
+app.use(express.json());
 app.use(cookieParser());
 app.use(
   cors({
@@ -35,13 +35,12 @@ app.use("/api/loop", loopRouter);
 app.use("/api/story", storyRouter);
 app.use("/api/message", messageRouter);
 app.use("/api/notification", notificationRouter);
+app.use("/api/tweet", tweetRouter); // ✅ ADD
 
-// Test route
 app.get("/", (req, res) => {
   res.send("hello");
 });
 
-// Start server
 server.listen(port, () => {
   console.log("server started at:", port);
   connentDB();

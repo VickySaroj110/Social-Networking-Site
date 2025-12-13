@@ -4,6 +4,7 @@ import { FaSearch, FaPlusSquare, FaFilm } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import dp1 from "../assets/dp1.jpeg"
+import { FaXTwitter } from "react-icons/fa6"; // ✅ ADD
 
 function Nav() {
     const navigate = useNavigate()
@@ -17,6 +18,10 @@ function Nav() {
             <FaSearch className='text-[#ffffff] w-[25px] h-[25px] cursor-pointer' onClick={() => navigate(`/search`)}/>
             <FaPlusSquare className='text-[white] w-[25px] h-[25px] cursor-pointer' onClick={() => navigate(`/upload`)}/>
             <FaFilm className='text-[white] w-[25px] h-[25px] cursor-pointer' onClick={() => navigate(`/loops`)}/>
+
+            {/* ✅ Twitter/Tweets button */}
+            <FaXTwitter className='text-[white] w-[25px] h-[25px] cursor-pointer' onClick={() => navigate(`/tweets`)}/>
+
             <div>
                 <div className='w-[40px] h-[40px] border-2 border-black rounded-full cursor-pointer overflow-hidden'
                     onClick={() => navigate(`/profile/${userData.userName}`)}>
