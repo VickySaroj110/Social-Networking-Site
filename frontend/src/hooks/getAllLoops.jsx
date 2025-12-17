@@ -11,8 +11,8 @@ function getAllLoops() {
     useEffect(() => {
         const fetchloops = async () => {
             try {
-                // Load first page with 10 reels
-                const result = await axios.get(`${serverUrl}/api/loop/getAll?page=1&limit=10`, { withCredentials: true })
+                // Fetch all reels (use a large limit to get everything)
+                const result = await axios.get(`${serverUrl}/api/loop/getAll?page=1&limit=500`, { withCredentials: true })
                 dispatch(setLoopData(result.data))
             } 
             catch (error) {

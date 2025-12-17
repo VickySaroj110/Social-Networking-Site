@@ -12,7 +12,8 @@ export const uploadLoop = async (req, res) => {
     if (!req.file)
       return res.status(400).json({ message: "Media is required" });
 
-    const media = await uploadOnCloudinary(req.file.path);
+    const cloudinaryResult = await uploadOnCloudinary(req.file.path);
+    const media = cloudinaryResult.secure_url;
 
     const loop = await Loop.create({
       caption,
@@ -135,10 +136,9 @@ export const like = async (req, res) => {
     }
 
     await loop.save();
-    const populatedLoop = await Loop.findById(loopId).populate(
-      "author",
-      "name userName profileImage"
-    );
+    const populatedLoop = await Loop.findById(loopId)
+      .populate("author", "name userName profileImage")
+      .populate("comments.author", "name userName profileImage");
     return res.status(200).json(populatedLoop);
   } catch (error) {
     console.error("like error:", error);

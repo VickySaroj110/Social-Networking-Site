@@ -11,7 +11,8 @@ export const createTweet = async (req, res) => {
 
     let imageUrl = "";
     if (req.file) {
-      imageUrl = await uploadOnCloudinary(req.file.path);
+      const uploadResponse = await uploadOnCloudinary(req.file.path);
+      imageUrl = uploadResponse.secure_url;
     }
 
     const tweet = await Tweet.create({

@@ -7,7 +7,7 @@ const connentDB = async (req,res) => {
     }
 
     catch(error){
-        console.log("failed")
+        console.log("error while connecting to DB", error)
     }
 }
 

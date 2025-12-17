@@ -1,6 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import dp from "../assets/dp.png"
-import VideoPlayer from './VideoPlayer';
+import SimpleVideoPlayer from './SimpleVideoPlayer';
 import {
     FaHeart,
     FaRegHeart,
@@ -26,8 +26,18 @@ function Post({ post, onUpdate }) {
 
     const [showComment, setshowComment] = useState(false);
     const [message, setMessage] = useState("");
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [selectedShareUser, setSelectedShareUser] = useState(null);
+    const [shareLoading, setShareLoading] = useState(false);
+    const [isSaved, setIsSaved] = useState(false);
 
     const navigate = useNavigate();
+
+    // Sync local saved state with Redux userData
+    useEffect(() => {
+        const isSavedInRedux = userData?.saved?.includes(post?._id);
+        setIsSaved(isSavedInRedux || false)
+    }, [userData, post?._id])
 
     // ✅ FIXED: Refetch complete data after like
     const handleLike = async () => {
@@ -79,12 +89,15 @@ function Post({ post, onUpdate }) {
     // SAVE / UNSAVE
     const handleSaved = async () => {
         try {
+            // Update local state immediately for instant UI feedback
+            setIsSaved(!isSaved);
+            
             await axios.get(`${serverUrl}/api/post/saved/${post._id}`, { withCredentials: true });
 
-            let updatedSaved = [...userData.saved];
-            const isSaving = !updatedSaved.includes(post._id);
+            let updatedSaved = [...(userData.saved || [])];
+            const wasInArray = updatedSaved.includes(post._id);
             
-            if (updatedSaved.includes(post._id)) {
+            if (wasInArray) {
                 updatedSaved = updatedSaved.filter(id => id !== post._id);
             } else {
                 updatedSaved.push(post._id);
@@ -95,9 +108,11 @@ function Post({ post, onUpdate }) {
                 saved: updatedSaved
             }));
 
-            // Pass null if unsaving, so Profile can remove it from savedPosts
-            if(onUpdate) onUpdate(isSaving ? { ...post } : null);
+            // If it was in array and we removed it, call unsave callback
+            if(onUpdate) onUpdate(wasInArray ? { _id: post._id, action: 'unsave' } : { ...post });
         } catch (error) {
+            // Revert local state if API fails
+            setIsSaved(!isSaved);
             console.error(error);
         }
     };
@@ -145,8 +160,88 @@ function Post({ post, onUpdate }) {
         }
     };
 
+    // Share post
+    const handleSharePost = async () => {
+        if (!selectedShareUser) return
+        try {
+            setShareLoading(true)
+            await axios.post(
+                `${serverUrl}/api/message/send/${selectedShareUser._id}`,
+                { postId: post._id },
+                { withCredentials: true }
+            )
+            setShowShareModal(false)
+            setSelectedShareUser(null)
+            toast.success("Post shared!")
+        } catch (error) {
+            console.error("Share failed:", error)
+            toast.error("Failed to share post")
+        } finally {
+            setShareLoading(false)
+        }
+    }
+
+    // Get all sharable users
+    const getSharableUsers = () => {
+        const followers = userData?.followers || []
+        const following = userData?.following || []
+        const allUsers = [...followers, ...following]
+        const uniqueUsers = Array.from(new Map(allUsers.map(u => {
+            const userId = u._id || u
+            return [userId, typeof u === 'object' ? u : { _id: u, userName: 'User', profileImage: null }]
+        })).values())
+        return uniqueUsers.filter(u => u._id !== userData?._id)
+    }
+
     return (
         <div className='w-[90%] min-h-[450px] pb-[20px] max-w-[500px] flex flex-col gap-4 bg-white items-center shadow-lg shadow-[#00000030] rounded-2xl overflow-y-scroll'>
+
+            {/* SHARE MODAL */}
+            {showShareModal && (
+                <div className='fixed inset-0 z-[300] bg-black/60 flex items-center justify-center p-4 rounded-2xl'>
+                    <div className='bg-white rounded-3xl p-6 max-w-[400px] w-full'>
+                        <h2 className='text-gray-800 text-xl font-bold mb-4'>Share Post</h2>
+                        <div className='grid grid-cols-3 gap-4 max-h-[400px] overflow-y-auto mb-4'>
+                            {getSharableUsers().map(user => (
+                                <div
+                                    key={user._id}
+                                    onClick={() => setSelectedShareUser(user)}
+                                    className={`flex flex-col items-center gap-2 p-3 rounded-2xl cursor-pointer transition ${
+                                        selectedShareUser?._id === user._id
+                                            ? 'bg-gray-200 border-2 border-gray-800'
+                                            : 'hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <img
+                                        src={user.profileImage || dp}
+                                        alt={user.userName}
+                                        className='w-16 h-16 rounded-full object-cover border-2 border-gray-400'
+                                    />
+                                    <p className='text-gray-800 text-xs text-center truncate w-full'>{user.userName}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className='flex gap-3'>
+                            <button
+                                disabled={!selectedShareUser || shareLoading}
+                                className='flex-1 bg-black text-white py-2 rounded-full font-semibold disabled:opacity-50'
+                                onClick={handleSharePost}
+                            >
+                                {shareLoading ? 'Sending...' : 'Send'}
+                            </button>
+                            <button
+                                className='flex-1 border-2 border-gray-800 text-gray-800 py-2 rounded-full font-semibold'
+                                onClick={() => {
+                                    setShowShareModal(false)
+                                    setSelectedShareUser(null)
+                                }}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* USER HEADER */}
             <div className='w-full flex justify-between items-center px-4 py-3'>
@@ -173,7 +268,7 @@ function Post({ post, onUpdate }) {
                 {userData._id === post.author._id && (
                     <button
                         onClick={() => handleDelete(post._id)}
-                        className='ml-2 text-red-600 font-semibold'
+                        className='bg-red-600/80 hover:bg-red-600 text-white text-[13px] font-semibold px-3 py-2 rounded-lg transition'
                     >
                         Delete
                     </button>
@@ -186,8 +281,8 @@ function Post({ post, onUpdate }) {
                     <img src={post.media} alt="" className="w-full h-full object-cover rounded-2xl" />
                 )}
                 {post.mediaType === "video" && (
-                    <div className="w-full max-w-[500px] flex items-center justify-center">
-                        <VideoPlayer media={post.media} />
+                    <div className="w-full max-w-[500px] h-[500px] flex items-center justify-center">
+                        <SimpleVideoPlayer media={post.media} isStory={false} />
                     </div>
                 )}
             </div>
@@ -212,10 +307,17 @@ function Post({ post, onUpdate }) {
                         <FaRegComment className="w-[25px] cursor-pointer h-[25px]" />
                         <span>{post.comments.length}</span>
                     </div>
+
+                    <div
+                        className='flex justify-center items-center gap-[5px] cursor-pointer'
+                        onClick={() => setShowShareModal(true)}
+                    >
+                        <FaRegPaperPlane className="w-[25px] h-[25px]" />
+                    </div>
                 </div>
 
                 <div onClick={handleSaved}>
-                    {userData.saved?.includes(post._id) ? (
+                    {isSaved ? (
                         <FaBookmark className="w-[25px] cursor-pointer h-[25px] text-yellow-500" />
                     ) : (
                         <FaRegBookmark className="w-[25px] cursor-pointer h-[25px]" />

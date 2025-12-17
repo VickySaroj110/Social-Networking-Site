@@ -6,6 +6,7 @@ import loopSlice from "./loopSlice";
 import messageSlice from "./messageSlice";
 import socketClient from "./socketClient";
 import notificationSlice from "./notificationSlice";
+import mediaSlice from "./mediaSlice";
 const store = configureStore({
   reducer: {
     user: userSlice,
@@ -15,6 +16,7 @@ const store = configureStore({
     message: messageSlice,
     socket: socketClient,
     notification: notificationSlice,
+    media: mediaSlice,
   },
 });
 

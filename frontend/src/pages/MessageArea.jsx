@@ -18,10 +18,13 @@ function MessageArea() {
   const [input, setInput] = useState("");
   const [frontendMedia, setFrontendMedia] = useState(null);
   const [backendMedia, setBackendMedia] = useState(null);
+  const [userScrolled, setUserScrolled] = useState(false);
+  const [lastMessageCount, setLastMessageCount] = useState(0);
 
   const imageInput = useRef();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const messagesContainerRef = useRef(null);
 
   const handleImage = (e) => {
     const file = e.target.files[0];
@@ -42,10 +45,22 @@ function MessageArea() {
     e.preventDefault();
     if (!selectedUser?._id) return;
 
+    // Validate: must have text or image
+    if (!input.trim() && !backendMedia) return;
+
     try {
       const formData = new FormData();
-      formData.append("message", input);
-      if (backendMedia) formData.append("image", backendMedia);
+      if (input.trim()) {
+        formData.append("message", input);
+      }
+      if (backendMedia) {
+        formData.append("image", backendMedia);
+      }
+
+      console.log("📤 Sending message with:", { 
+        hasMessage: !!input.trim(), 
+        hasImage: !!backendMedia 
+      });
 
       const res = await axios.post(
         `${serverUrl}/api/message/send/${selectedUser._id}`,
@@ -56,13 +71,14 @@ function MessageArea() {
         }
       );
 
+      console.log("✅ Message sent:", res.data);
       dispatch(setMessages([...messages, res.data]));
 
       setInput("");
       setFrontendMedia(null);
       setBackendMedia(null);
     } catch (error) {
-      console.log("Send Message Error:", error);
+      console.error("❌ Send Message Error:", error.response?.data || error.message);
     }
   };
 
@@ -77,9 +93,12 @@ function MessageArea() {
       );
 
       if (Array.isArray(res.data)) {
+        // Always update messages to sync deleted/new messages
         dispatch(setMessages(res.data));
+        setLastMessageCount(res.data.length);
       } else {
         dispatch(setMessages([]));
+        setLastMessageCount(0);
       }
     } catch (error) {
       console.log("Fetch message error:", error);
@@ -91,20 +110,61 @@ function MessageArea() {
     getAllMessages();
   }, [selectedUser]);
 
+  useEffect(() => {
+    // Set initial message count when messages change from initial load
+    if (messages && lastMessageCount === 0) {
+      setLastMessageCount(messages.length);
+    }
+  }, [messages, lastMessageCount]);
+
+  // --------------------- WINDOW FOCUS DETECTION ---------------------
+  // Refresh messages when user comes back to the window (tab/window focus)
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log("👁️ Window focused - refreshing messages");
+      getAllMessages();
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [selectedUser]);
+
   // --------------------- SCROLL TO LAST MESSAGE ---------------------
-  const lastMessageRef = useRef(null);
-  const initialLoad = useRef(true);
+  // Smart scroll: Only auto-scroll if user is at the bottom, otherwise respect their scroll position
+  const handleScroll = (e) => {
+    const container = e.target;
+    const isAtBottom = 
+      Math.abs(container.scrollHeight - container.scrollTop - container.clientHeight) < 50;
+    setUserScrolled(!isAtBottom);
+  };
 
   useEffect(() => {
-    if (!messages || messages.length === 0) return;
-
-    if (initialLoad.current) {
-      lastMessageRef.current?.scrollIntoView({ behavior: "auto" });
-      initialLoad.current = false;
-    } else {
-      lastMessageRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Only auto-scroll to bottom if user hasn't manually scrolled up
+    if (!userScrolled && messagesContainerRef.current) {
+      setTimeout(() => {
+        if (messagesContainerRef.current) {
+          messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight;
+        }
+      }, 0);
     }
   }, [messages]);
+
+  // Reset userScrolled when user scrolls to bottom
+  useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const checkScroll = () => {
+      const isAtBottom = 
+        Math.abs(container.scrollHeight - container.scrollTop - container.clientHeight) < 50;
+      if (isAtBottom) {
+        setUserScrolled(false);
+      }
+    };
+
+    container.addEventListener('scroll', checkScroll);
+    return () => container.removeEventListener('scroll', checkScroll);
+  }, []);
 
   // ----------------------------------------------------------
   // --------------------- UI START ---------------------------
@@ -113,34 +173,48 @@ function MessageArea() {
   if (!selectedUser) return null;
 
   return (
-    <div className="w-full h-[100vh] bg-black relative">
+    <div className="w-full h-[100vh] bg-black flex flex-col relative">
 
       {/* Top bar */}
-      <div className="w-full flex items-center gap-[15px] px-[20px] py-[10px] fixed top-0 z-[100] bg-black">
-        <MdOutlineKeyboardBackspace
-          onClick={() => navigate(`/profile/${selectedUser?.userName}`)}
-          className="text-white cursor-pointer w-[25px] h-[25px]"
-        />
-        
-        <div
-          className="w-[40px] h-[40px] border-2 border-black rounded-full cursor-pointer overflow-hidden"
-          onClick={() => navigate(`/profile/${selectedUser?.userName}`)}
-        >
-          <img
-            src={selectedUser?.profileImage || dp1}
-            alt=""
-            className="w-full object-cover"
+      <div className="w-full flex items-center justify-between px-[20px] py-[10px] fixed top-0 z-[100] bg-black">
+        <div className="flex items-center gap-[15px]">
+          <MdOutlineKeyboardBackspace
+            onClick={() => navigate(`/profile/${selectedUser?.userName}`)}
+            className="text-white cursor-pointer w-[25px] h-[25px]"
           />
+          
+          <div
+            className="w-[40px] h-[40px] border-2 border-black rounded-full cursor-pointer overflow-hidden"
+            onClick={() => navigate(`/profile/${selectedUser?.userName}`)}
+          >
+            <img
+              src={selectedUser?.profileImage || dp1}
+              alt=""
+              className="w-full object-cover"
+            />
+          </div>
+
+          <div className="text-white text-[16px] font-semibold">
+            <div>{selectedUser?.userName}</div>
+            <div className="text-[12px] text-gray-400">{selectedUser?.name}</div>
+          </div>
         </div>
 
-        <div className="text-white text-[16px] font-semibold">
-          <div>{selectedUser?.userName}</div>
-          <div className="text-[12px] text-gray-400">{selectedUser?.name}</div>
-        </div>
+        {/* Refresh button */}
+        <button
+          onClick={getAllMessages}
+          className="text-white hover:text-blue-400 transition text-[20px]"
+          title="Refresh messages"
+        >
+          ↻
+        </button>
       </div>
 
       {/* MESSAGE SECTION */}
-      <div className="w-full h-[80%] pt-[100px] px-[40px] flex flex-col gap-[50px] overflow-auto bg-black">
+      <div 
+        ref={messagesContainerRef}
+        className="flex-1 w-full mt-[80px] mb-[100px] px-[40px] overflow-y-auto bg-black flex flex-col gap-[50px] py-[20px]"
+      >
         {messages &&
           messages.map((msg, index) =>
             msg.sender === userData?._id ? (
@@ -149,12 +223,10 @@ function MessageArea() {
               <ReceiverMessage key={index} message={msg} />
             )
           )}
-
-        <div ref={lastMessageRef}></div>
       </div>
 
       {/* INPUT BOX */}
-      <div className="w-full h-[80px] fixed bottom-0 flex justify-center items-center bg-black z-[100]">
+      <div className="w-full h-[100px] fixed bottom-0 z-[100] flex justify-center items-center bg-black border-t border-gray-700">
 
         <form
           onSubmit={handleSendMessage}

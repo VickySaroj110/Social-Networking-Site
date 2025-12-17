@@ -1,5 +1,6 @@
 import { json } from "express";
 import User from "../models/user.model.js";
+import Notification from "../models/notification.model.js";
 import uploadOnCloudinary from "../config/cloudinary.js";
 
 export const getCurrentUser = async (req, res) => {
@@ -12,6 +13,8 @@ export const getCurrentUser = async (req, res) => {
         "loops",
         "posts.author",
         "posts.comments.author",
+        "followers",
+        "following",
         { path: "saved", populate: [
           { path: "author", select: "name userName profileImage" },
           { path: "comments.author", select: "name userName profileImage" }
@@ -62,7 +65,8 @@ export const editProfile = async (req, res) => {
     }
     let profileImage;
     if (req.file) {
-      profileImage = await uploadOnCloudinary(req.file.path);
+      const uploadResponse = await uploadOnCloudinary(req.file.path);
+      profileImage = uploadResponse.secure_url;
     }
 
     user.name = name;
@@ -132,6 +136,15 @@ export const follow = async (req, res) => {
       targetUser.followers.push(currentUserId);
       await currentUser.save();
       await targetUser.save();
+
+      // 🔔 Create follow notification
+      const notification = await Notification.create({
+        recipient: targetUserId,
+        sender: currentUserId,
+        type: "follow",
+        message: `followed you`,
+      });
+
       return res.status(200).json({
         following: true,
         message: "follow successfully",

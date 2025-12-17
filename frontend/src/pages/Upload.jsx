@@ -3,7 +3,7 @@ import { MdOutlineKeyboardBackspace } from "react-icons/md"
 import { useDispatch, useSelector } from 'react-redux'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { FaPlusSquare } from 'react-icons/fa'
-import VideoPlayer from '../component/VideoPlayer'
+import SimpleVideoPlayer from '../component/SimpleVideoPlayer'
 import { serverUrl } from '../App'
 import axios from 'axios'
 import { setPostData } from '../redux/postSlice'
@@ -53,16 +53,31 @@ function Upload() {
     const uploadPost = async () => {
         setLoading(true)
         try {
+            if (!backendMedia) {
+                alert("Please select an image or video to upload")
+                setLoading(false)
+                return
+            }
             const formData = new FormData()
             formData.append("caption", caption)
             formData.append("mediaType", mediaType)
             formData.append("media", backendMedia)
-            const result = await axios.post(`${serverUrl}/api/post/upload`, formData, { withCredentials: true })
+            const result = await axios.post(`${serverUrl}/api/post/upload`, formData, { 
+                withCredentials: true,
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            })
             // Backend returns populatedPost directly, prepend to existing posts
             dispatch(setPostData([result.data, ...postData]))
+            setFrontendMedia("")
+            setBackendMedia("")
+            setCaption("")
+            setMediaType("")
             navigate("/")
         } catch (error) {
-            console.log(error)
+            console.log("Post upload error:", error.response?.data || error.message)
+            alert("Failed to upload post: " + (error.response?.data?.message || error.message))
         } finally {
             setLoading(false)
         }
@@ -71,14 +86,29 @@ function Upload() {
     const uploadStory = async () => {
         setLoading(true)
         try {
+            if (!backendMedia) {
+                alert("Please select an image or video to upload")
+                setLoading(false)
+                return
+            }
             const formData = new FormData()
             formData.append("mediaType", mediaType)
             formData.append("media", backendMedia)
-            const result = await axios.post(`${serverUrl}/api/story/upload`, formData, { withCredentials: true })
+            const result = await axios.post(`${serverUrl}/api/story/upload`, formData, { 
+                withCredentials: true,
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            })
             dispatch(setCurrentUserStory(result.data))
+            setFrontendMedia("")
+            setBackendMedia("")
+            setCaption("")
+            setMediaType("")
             navigate("/")
         } catch (error) {
-            console.log(error)
+            console.log("Story upload error:", error.response?.data || error.message)
+            alert("Failed to upload story: " + (error.response?.data?.message || error.message))
         } finally {
             setLoading(false)
         }
@@ -87,14 +117,29 @@ function Upload() {
     const uploadReel = async () => {
         setLoading(true)
         try {
+            if (!backendMedia) {
+                alert("Please select a video to upload")
+                setLoading(false)
+                return
+            }
             const formData = new FormData()
             formData.append("caption", caption)
             formData.append("media", backendMedia)
-            const result = await axios.post(`${serverUrl}/api/loop/upload`, formData, { withCredentials: true })
-            dispatch(setLoopData([...loopData, result.data]))
+            const result = await axios.post(`${serverUrl}/api/loop/upload`, formData, { 
+                withCredentials: true,
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            })
+            dispatch(setLoopData([result.data, ...loopData]))
+            setFrontendMedia("")
+            setBackendMedia("")
+            setCaption("")
+            setMediaType("")
             navigate("/")
         } catch (error) {
-            console.log(error)
+            console.log("Reel upload error:", error.response?.data || error.message)
+            alert("Failed to upload reel: " + (error.response?.data?.message || error.message))
         } finally {
             setLoading(false)
         }
@@ -173,7 +218,7 @@ function Upload() {
 
                     {mediaType === "video" && 
                         <div className='w-[80%] max-w-[500px] h-[250px] flex flex-col items-center justify-center mt-[5vh]'>
-                            <VideoPlayer media={frontendMedia} />
+                            <SimpleVideoPlayer media={frontendMedia} />
                             {uploadType !== "story" && 
                                 <input type="text" 
                                     className='w-full border-b-gray-400 border-b-2 outline-none px-[10px] py-[5px] text-white mt-[20px]'

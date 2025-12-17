@@ -1,21 +1,29 @@
 import React, { useEffect, useState, useRef } from 'react'
 import dp from "../assets/dp.png"
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import { MdOutlineKeyboardBackspace } from 'react-icons/md'
 import { useNavigate } from 'react-router-dom'
-import VideoPlayer from './VideoPlayer'
+import SimpleVideoPlayer from './SimpleVideoPlayer'
 import { FaEye, FaTrash } from 'react-icons/fa6'
 import axios from "axios"
 import { serverUrl } from '../App'
+import { setGlobalMute } from '../redux/mediaSlice'
 
 function StoryCard({ storyData }) {
     const [showViewers, setShowViewers] = useState(false)
     const navigate = useNavigate()
     const [progress, setProgress] = useState(0)
+    const dispatch = useDispatch()
     const videoRef = useRef(null)
     const { userData } = useSelector(state => state.user)
 
     const STORY_DURATION = 5000 // 5 seconds for image story
+    const MAX_VIDEO_DURATION = 30000 // 30 seconds max for videos
+
+    // Auto-unmute when story loads so it plays with audio
+    useEffect(() => {
+        dispatch(setGlobalMute(false))
+    }, [dispatch])
 
     // Delete story
     const deleteStoryHandler = async () => {
@@ -29,25 +37,38 @@ function StoryCard({ storyData }) {
         }
     }
 
-    // Progress handling
+    // Progress handling and auto-play
     useEffect(() => {
         let interval
+        let timeoutId
         if (storyData?.mediaType === "video") {
             const video = videoRef.current
             if (!video) return
 
+            // Auto-play video when it loads
+            video.play().catch(() => {})
+
             const updateProgress = () => {
-                const percent = (video.currentTime / (video.duration || 1)) * 100
+                const videoDuration = video.duration || 1
+                const maxDuration = Math.min(videoDuration, 30) // 30 seconds max
+                const percent = (video.currentTime / maxDuration) * 100
                 setProgress(Math.min(percent, 100))
                 if (percent >= 100) navigate("/")
             }
 
             const handleEnded = () => navigate("/")
 
+            // Auto-close after 30 seconds even if video is longer
+            timeoutId = setTimeout(() => {
+                navigate("/")
+            }, MAX_VIDEO_DURATION)
+
             video.addEventListener("timeupdate", updateProgress)
             video.addEventListener("ended", handleEnded)
 
             return () => {
+                clearTimeout(timeoutId)
+
                 video.removeEventListener("timeupdate", updateProgress)
                 video.removeEventListener("ended", handleEnded)
             }
@@ -69,9 +90,9 @@ function StoryCard({ storyData }) {
     }, [storyData, navigate])
 
     return (
-        <div className='w-full max-w-[500px] h-[100vh] border-x-2 border-gray-800 pt-[60px] relative flex flex-col justify-center'>
+        <div className='w-full max-w-[500px] h-[100vh] border-x-2 border-gray-800 relative flex flex-col'>
             {/* Top bar */}
-            <div className='flex items-center gap-[10px] absolute top-[10px] px-[10px] w-full z-10'>
+            <div className='flex items-center gap-[10px] fixed top-[10px] px-[10px] w-full max-w-[500px] z-20'>
                 <MdOutlineKeyboardBackspace
                     onClick={() => navigate(`/`)}
                     className='text-white cursor-pointer w-[25px] h-[25px]'
@@ -93,44 +114,37 @@ function StoryCard({ storyData }) {
                     {storyData?.author?.userName}
                 </div>
                 {storyData?.author?.userName === userData?.userName && (
-                    <div className='absolute top-[5px] right-[10px] z-20'>
-                        <FaTrash
-                            onClick={deleteStoryHandler}
-                            className='text-red-500 cursor-pointer'
-                        />
-                    </div>
+                    <FaTrash
+                        onClick={deleteStoryHandler}
+                        className='text-red-500 cursor-pointer w-[20px] h-[20px] ml-auto'
+                    />
                 )}
             </div>
 
-            {/* Story content */}
-            {!showViewers && <div className="w-full h-[90vh] flex items-center justify-center">
+            {/* Story content - Full height minus header */}
+            {!showViewers && <div className="w-full flex-1 flex items-center justify-center overflow-hidden">
                 {storyData?.mediaType === "image" && (
                     <div className="w-full h-full flex items-center justify-center">
                         <img
                             src={storyData.media}
                             alt=""
-                            className="max-w-full max-h-full object-contain rounded-2xl"
+                            className="w-full h-full object-cover"
                         />
                     </div>
                 )}
                 {storyData?.mediaType === "video" && (
                     <div className="w-full h-full flex items-center justify-center">
-                        <VideoPlayer
+                        <SimpleVideoPlayer
                             ref={videoRef}
                             media={storyData.media}
+                            showProgress={true}
+                            progress={progress}
+                            isStory={true}
                             className="w-full h-full"
                         />
                     </div>
                 )}
             </div>}
-
-            {/* Progress Bar */}
-            <div className='absolute top-[10px] w-full h-[3px] bg-gray-900'>
-                <div
-                    className='h-full bg-white transition-all duration-50 ease-linear'
-                    style={{ width: `${progress}%` }}
-                ></div>
-            </div>
 
             {/* Viewers Section */}
             {storyData?.author?.userName === userData?.userName &&
@@ -168,12 +182,12 @@ function StoryCard({ storyData }) {
                         <img
                             src={storyData?.media}
                             alt=""
-                            className="max-w-full max-h-full object-contain rounded-2xl"
+                            className="w-full h-full object-cover rounded-2xl"
                         />
                     )}
                     {storyData?.mediaType === "video" && (
                         <div className="w-full h-full rounded-2xl overflow-hidden">
-                            <VideoPlayer
+                            <SimpleVideoPlayer
                                 ref={videoRef}
                                 media={storyData.media}
                                 className="w-full h-full"

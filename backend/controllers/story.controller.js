@@ -14,7 +14,8 @@ export const uploadStory = async (req, res) => {
         const { mediaType } = req.body
         let media;
         if (req.file) {
-            media = await uploadOnCloudinary(req.file.path)
+            const cloudinaryResult = await uploadOnCloudinary(req.file.path);
+            media = cloudinaryResult.secure_url; // Extract only the URL
         } else {
             return res.status(400).json({ message: "media is required" })
         }

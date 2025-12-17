@@ -9,7 +9,7 @@ import { setLoopData } from '../redux/loopSlice'
 import { setUserData } from '../redux/userSlice'
 import axios from 'axios'
 
-function LoopCard({ loop, onProfileClick, onLoopUpdate }) {
+function LoopCard({ loop, onProfileClick, onLoopUpdate, onLoopSaved }) {
     const videoRef = useRef()
     const commentRef = useRef()
     const dispatch = useDispatch()
@@ -21,14 +21,19 @@ function LoopCard({ loop, onProfileClick, onLoopUpdate }) {
     const [progress, setProgress] = useState(0)
     const [showHeart, setShowHeart] = useState(false)
     const [isSaved, setIsSaved] = useState(false)
+    const [showShareModal, setShowShareModal] = useState(false)
+    const [selectedShareUser, setSelectedShareUser] = useState(null)
+    const [shareLoading, setShareLoading] = useState(false)
+    const [expandCaption, setExpandCaption] = useState(false)
 
     const { userData } = useSelector(state => state.user)
     const { loopData } = useSelector(state => state.loop)
 
     // Sync local saved state with Redux userData
     useEffect(() => {
-        setIsSaved(userData?.savedLoops?.includes(loop._id) || false)
-    }, [userData?.savedLoops, loop._id])
+        const isSavedInRedux = userData?.savedLoops?.includes(loop._id);
+        setIsSaved(isSavedInRedux || false)
+    }, [userData, loop._id])
 
     const HandleTimeUpdate = () => {
         const video = videoRef.current
@@ -198,24 +203,27 @@ function LoopCard({ loop, onProfileClick, onLoopUpdate }) {
 
     const handleSaveLoop = async () => {
         try {
-            // Update local state immediately for instant UI feedback (NO SCROLL JUMP)
+            // Update local state immediately for instant UI feedback
             setIsSaved(!isSaved)
             
-            // Make API call
             await axios.get(`${serverUrl}/api/loop/save/${loop._id}`, { withCredentials: true })
+
+            let updatedSavedLoops = [...(userData.savedLoops || [])]
+            const wasInArray = updatedSavedLoops.includes(loop._id)
             
-            // Update Redux AFTER a delay to avoid snap-scroll issues
-            setTimeout(() => {
-                const updatedSavedLoops = !isSaved 
-                    ? userData.savedLoops.filter(id => id !== loop._id)
-                    : [...(userData.savedLoops || []), loop._id]
-                
-                const updatedUserData = {
-                    ...userData,
-                    savedLoops: updatedSavedLoops
-                }
-                dispatch(setUserData(updatedUserData))
-            }, 300)
+            if (wasInArray) {
+                updatedSavedLoops = updatedSavedLoops.filter(id => id !== loop._id)
+            } else {
+                updatedSavedLoops.push(loop._id)
+            }
+
+            dispatch(setUserData({
+                ...userData,
+                savedLoops: updatedSavedLoops
+            }))
+
+            // If it was in array and we removed it, call unsave callback
+            if(onLoopSaved) onLoopSaved(wasInArray ? { _id: loop._id, action: 'unsave' } : { ...loop })
         } catch (error) {
             // Revert local state if API fails
             setIsSaved(!isSaved)
@@ -234,6 +242,37 @@ function LoopCard({ loop, onProfileClick, onLoopUpdate }) {
         }
     }
 
+    // Share reel
+    const handleShareReel = async () => {
+        if (!selectedShareUser) return
+        try {
+            setShareLoading(true)
+            await axios.post(
+                `${serverUrl}/api/message/send/${selectedShareUser._id}`,
+                { loopId: loop._id },
+                { withCredentials: true }
+            )
+            setShowShareModal(false)
+            setSelectedShareUser(null)
+        } catch (error) {
+            console.error("Share failed:", error)
+        } finally {
+            setShareLoading(false)
+        }
+    }
+
+    // Get all sharable users
+    const getSharableUsers = () => {
+        const followers = userData?.followers || []
+        const following = userData?.following || []
+        const allUsers = [...followers, ...following]
+        const uniqueUsers = Array.from(new Map(allUsers.map(u => {
+            const userId = u._id || u
+            return [userId, typeof u === 'object' ? u : { _id: u, userName: 'User', profileImage: null }]
+        })).values())
+        return uniqueUsers.filter(u => u._id !== userData?._id)
+    }
+
     return (
         <div className='w-full lg:w-[480px] h-[100vh] flex items-center justify-center border-l-2 border-r-2 border-gray-800 relative overflow-hidden'>
 
@@ -244,24 +283,71 @@ function LoopCard({ loop, onProfileClick, onLoopUpdate }) {
                 </div>
             )}
 
-            {/* TOP RIGHT BUTTONS */}
-            <div className="absolute top-4 right-4 flex flex-col items-end gap-2 z-[100]">
-                {loop.author?._id === userData._id && (
-                    <button
-                        className="text-red-500 text-[14px] font-semibold"
-                        onClick={handleDeleteLoop}
-                    >
-                        Delete Reel
-                    </button>
-                )}
+            {/* SHARE MODAL */}
+            {showShareModal && (
+                <div className='absolute inset-0 z-[300] bg-black/60 flex items-center justify-center p-4 rounded-2xl'>
+                    <div className='bg-[#0e1718] rounded-3xl p-6 max-w-[400px] w-full'>
+                        <h2 className='text-white text-xl font-bold mb-4'>Share Reel</h2>
+                        <div className='grid grid-cols-3 gap-4 max-h-[400px] overflow-y-auto mb-4'>
+                            {getSharableUsers().map(user => (
+                                <div
+                                    key={user._id}
+                                    onClick={() => setSelectedShareUser(user)}
+                                    className={`flex flex-col items-center gap-2 p-3 rounded-2xl cursor-pointer transition ${
+                                        selectedShareUser?._id === user._id
+                                            ? 'bg-white/30 border-2 border-white'
+                                            : 'hover:bg-white/10'
+                                    }`}
+                                >
+                                    <img
+                                        src={user.profileImage || dp}
+                                        alt={user.userName}
+                                        className='w-16 h-16 rounded-full object-cover border-2 border-gray-400'
+                                    />
+                                    <p className='text-white text-xs text-center truncate w-full'>{user.userName}</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className='flex gap-3'>
+                            <button
+                                disabled={!selectedShareUser || shareLoading}
+                                className='flex-1 bg-white text-black py-2 rounded-full font-semibold disabled:opacity-50'
+                                onClick={handleShareReel}
+                            >
+                                {shareLoading ? 'Sending...' : 'Send'}
+                            </button>
+                            <button
+                                className='flex-1 border-2 border-white text-white py-2 rounded-full font-semibold'
+                                onClick={() => {
+                                    setShowShareModal(false)
+                                    setSelectedShareUser(null)
+                                }}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
+            {/* TOP RIGHT BUTTONS */}
+            <div className="absolute top-4 right-4 flex flex-col items-end gap-3 z-[200]">
                 {/* SOUND BUTTON */}
-                <div onClick={toggleMute} className="cursor-pointer">
+                <div onClick={toggleMute} className="cursor-pointer bg-black/60 hover:bg-black/80 p-2 rounded-lg transition">
                     {!isMuted 
-                        ? <FiVolume2 className='w-[20px] h-[20px] text-white font-semibold' />
-                        : <FiVolumeX className='w-[20px] h-[20px] text-white font-semibold' />
+                        ? <FiVolume2 className='w-[24px] h-[24px] text-white' />
+                        : <FiVolumeX className='w-[24px] h-[24px] text-white' />
                     }
                 </div>
+
+                {loop.author?._id === userData._id && (
+                    <button
+                        className="bg-red-600/80 hover:bg-red-600 text-white text-[13px] font-semibold px-3 py-2 rounded-lg transition"
+                        onClick={handleDeleteLoop}
+                    >
+                        Delete
+                    </button>
+                )}
             </div>
 
             {/* COMMENTS BOX */}
@@ -363,7 +449,7 @@ function LoopCard({ loop, onProfileClick, onLoopUpdate }) {
             </div>
 
             {/* BOTTOM INFO */}
-            <div className='w-full absolute h-[100px] bottom-[10px] p-[10px] flex flex-col gap-[10px]'>
+            <div className={`w-full absolute bottom-[10px] p-[10px] flex flex-col gap-[10px] transition-all duration-300 ${expandCaption ? 'h-auto max-h-[70vh] overflow-y-auto' : 'h-[100px]'}`}>
 
                 <div className='flex items-center gap-4'>
                     <div
@@ -388,34 +474,65 @@ function LoopCard({ loop, onProfileClick, onLoopUpdate }) {
                     )}
                 </div>
 
-                <div className='text-white p-[10px]'>{loop.caption}</div>
-
-                <div className='absolute right-0 flex flex-col gap-[20px] text-white bottom-[150px] p-[10px]'>
-
-                    <div className='flex flex-col items-center cursor-pointer'>
-                        <div onClick={handleLike}>
-                            {!loop.likes.includes(userData._id)
-                                ? <FaRegHeart className="w-[25px] h-[25px]" />
-                                : <FaHeart className="w-[25px] h-[25px] text-red-600" />}
-                        </div>
-                        <div>{loop.likes.length}</div>
-                    </div>
-
-                    <div className='flex flex-col items-center cursor-pointer'>
-                        <div onClick={() => setShowComment(true)}>
-                            <FaRegComment className="w-[25px] h-[25px]" />
-                        </div>
-                        <div><span>{loop.comments.length}</span></div>
-                    </div>
-
-                    <div className='flex flex-col items-center cursor-pointer' onClick={handleSaveLoop}>
-                        {!isSaved
-                            ? <FaRegBookmark className="w-[25px] h-[25px]" />
-                            : <FaBookmark className="w-[25px] h-[25px]" />
-                        }
-                    </div>
-
+                <div className='text-white p-[10px]'>
+                    {loop.caption && loop.caption.length > 0 ? (
+                        expandCaption ? (
+                            <div>
+                                <p className='mb-2'>{loop.caption}</p>
+                                <button
+                                    onClick={() => setExpandCaption(false)}
+                                    className='text-blue-400 hover:text-blue-300 text-sm font-semibold'
+                                >
+                                    See Less
+                                </button>
+                            </div>
+                        ) : (
+                            <div className='flex items-start gap-1'>
+                                <p className='line-clamp-1 flex-1'>{loop.caption}</p>
+                                {loop.caption.length > 50 && (
+                                    <button
+                                        onClick={() => setExpandCaption(true)}
+                                        className='text-blue-400 hover:text-blue-300 text-sm font-semibold whitespace-nowrap ml-2'
+                                    >
+                                        See More
+                                    </button>
+                                )}
+                            </div>
+                        )
+                    ) : null}
                 </div>
+            </div>
+
+            {/* SIDE ACTION BUTTONS - Always visible */}
+            <div className='absolute right-0 flex flex-col gap-[20px] text-white bottom-[150px] p-[10px]'>
+
+                <div className='flex flex-col items-center cursor-pointer'>
+                    <div onClick={handleLike}>
+                        {!loop.likes.includes(userData._id)
+                            ? <FaRegHeart className="w-[25px] h-[25px]" />
+                            : <FaHeart className="w-[25px] h-[25px] text-red-600" />}
+                    </div>
+                    <div>{loop.likes.length}</div>
+                </div>
+
+                <div className='flex flex-col items-center cursor-pointer'>
+                    <div onClick={() => setShowComment(true)}>
+                        <FaRegComment className="w-[25px] h-[25px]" />
+                    </div>
+                    <div><span>{loop.comments.length}</span></div>
+                </div>
+
+                <div className='flex flex-col items-center cursor-pointer' onClick={handleSaveLoop}>
+                    {isSaved
+                        ? <FaBookmark className="w-[25px] h-[25px] text-yellow-500" />
+                        : <FaRegBookmark className="w-[25px] h-[25px]" />
+                    }
+                </div>
+
+                <div className='flex flex-col items-center cursor-pointer' onClick={() => setShowShareModal(true)}>
+                    <FaRegPaperPlane className="w-[25px] h-[25px]" />
+                </div>
+
             </div>
         </div>
     )

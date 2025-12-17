@@ -114,24 +114,38 @@ function Profile() {
 
   // Refresh a single post in savedPosts after like/comment/delete or remove if unsaved
   const handleSavedPostUpdate = (updatedPost) => {
-    if (updatedPost === null) {
-      // Post was unsaved, refetch to get updated list
-      fetchSavedPosts()
+    if (updatedPost?.action === 'unsave') {
+      // Post was unsaved, remove it immediately from savedPosts
+      setSavedPosts(prev => prev.filter(p => p._id !== updatedPost._id))
     } else {
       // Post was updated, refresh it
       setSavedPosts(prev => prev.map(p => p._id === updatedPost._id ? updatedPost : p))
     }
   }
 
-  // Refresh a single loop in savedLoops after like/comment/delete
+  // Refresh a single loop in savedLoops after like/comment/delete or remove if unsaved
   const handleSavedLoopUpdate = (updatedLoop) => {
-    setSavedLoops(prev => prev.map(l => l._id === updatedLoop._id ? updatedLoop : l))
+    if (updatedLoop?.action === 'unsave') {
+      // Loop was unsaved, remove it immediately from savedLoops
+      setSavedLoops(prev => prev.filter(l => l._id !== updatedLoop._id))
+    } else {
+      // Loop was updated, refresh it
+      setSavedLoops(prev => prev.map(l => l._id === updatedLoop._id ? updatedLoop : l))
+    }
   }
 
   // Update user reel after like/comment
   const handleUserReelUpdate = (updatedLoop) => {
     setUserReelsLoaded(prev => prev.map(l => l._id === updatedLoop._id ? updatedLoop : l))
   }
+
+  // Refresh saved posts/loops when activeTab changes to saved
+  useEffect(() => {
+    if (activeTab === "saved") {
+      fetchSavedPosts()
+      fetchSavedLoops()
+    }
+  }, [activeTab])
 
   // Auto-refresh saved loops when loopData changes
   useEffect(() => {
@@ -178,7 +192,7 @@ function Profile() {
         <div>
           <div className='font-semibold text-[22px] text-white'>{profileData?.name}</div>
           <div className='text-[17px] text-[#ffffffe8]'>
-            {profileData?.profession || "New User"}
+            {profileData?.profession}
           </div>
           <div className='text-[17px] text-[#ffffffe8]'>{profileData?.bio}</div>
         </div>
@@ -310,16 +324,17 @@ function Profile() {
           )}
           
           {/* Display Saved Posts */}
-          {activeTab === "saved" && savedPosts.map((post, index) => (
-            <Post key={`post-${index}`} post={post} onUpdate={handleSavedPostUpdate} />
+          {activeTab === "saved" && savedPosts.map((post) => (
+            <Post key={post._id} post={post} onUpdate={handleSavedPostUpdate} />
           ))}
 
           {/* Display Saved Loops/Reels */}
-          {activeTab === "saved" && savedLoops.map((loop, index) => (
-            <div key={`loop-${index}`} className="w-full flex justify-center items-center">
+          {activeTab === "saved" && savedLoops.map((loop) => (
+            <div key={loop._id} className="w-full flex justify-center items-center">
               <LoopCard
                 loop={loop}
                 onProfileClick={(u) => navigate(`/profile/${u}`)}
+                onLoopSaved={handleSavedLoopUpdate}
               />
             </div>
           ))}

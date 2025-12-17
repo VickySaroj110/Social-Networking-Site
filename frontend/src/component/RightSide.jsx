@@ -48,7 +48,11 @@ function RightSide() {
               Loading friends...
             </div>
           ) : mutualFriends.length > 0 ? (
-            mutualFriends.map((friend) => {
+            [...mutualFriends].sort((a, b) => {
+              const aOnline = isUserOnline(a._id);
+              const bOnline = isUserOnline(b._id);
+              return bOnline - aOnline; // Online users first
+            }).map((friend) => {
               const isOnline = isUserOnline(friend._id);
 
               return (

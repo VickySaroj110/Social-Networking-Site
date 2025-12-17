@@ -9,6 +9,16 @@ const messageSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "User"
     },
+    loopId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Loop",
+        default: null
+    },
+    postId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Post",
+        default: null
+    },
     message:{
         type:String
     },

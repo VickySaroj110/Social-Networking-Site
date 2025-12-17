@@ -10,7 +10,8 @@ export const uploadPost = async (req, res) => {
     let media;
 
     if (req.file) {
-      media = await uploadOnCloudinary(req.file.path);
+      const cloudinaryResult = await uploadOnCloudinary(req.file.path);
+      media = cloudinaryResult.secure_url;
     } else {
       return res.status(400).json({ message: "media is required" });
     }
@@ -39,12 +40,27 @@ export const uploadPost = async (req, res) => {
 
 export const getAllPosts = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
     const posts = await Post.find({})
       .populate("author", "name userName profileImage")
       .populate("comments.author", "name userName profileImage")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-    return res.status(200).json(posts);
+    const totalPosts = await Post.countDocuments({});
+    const totalPages = Math.ceil(totalPosts / limit);
+
+    return res.status(200).json({
+      posts,
+      totalPosts,
+      totalPages,
+      currentPage: page,
+      hasMore: page < totalPages,
+    });
   } catch (error) {
     return res.status(500).json({ message: `getAllPost error ${error}` });
   }
@@ -99,6 +115,7 @@ export const like = async (req, res) => {
 
     await post.save();
     await post.populate("author", "name userName profileImage");
+    await post.populate("comments.author", "name userName profileImage");
 
     return res.status(200).json(post);
   } catch (error) {

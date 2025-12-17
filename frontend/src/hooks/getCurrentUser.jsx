@@ -13,7 +13,13 @@ function getCurrentUser() {
             try {
                 const result = await axios.get(`${serverUrl}/api/user/currentuser`, { withCredentials: true })
                 dispatch(setUserData(result.data))
-                dispatch(setFollowing(result.data.following || []))
+                
+                // Extract IDs from following array (since API returns full user objects)
+                const followingIds = result.data.following?.map(user => 
+                    typeof user === 'object' ? user._id : user
+                ) || []
+                dispatch(setFollowing(followingIds))
+                
                 dispatch(setCurrentUserStory(result.data.story || []))
             } catch (error) {
                 console.log("getCurrentUser error:", error)

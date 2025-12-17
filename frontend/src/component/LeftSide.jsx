@@ -11,7 +11,7 @@ import Notifications from "./Notifications";
 import dp1 from "../assets/dp1.jpeg";
 
 function LeftSide() {
-  const { userData, suggestedUser } = useSelector((state) => state.user);
+  const { userData, suggestedUser, following } = useSelector((state) => state.user);
   const { unreadCount } = useSelector((state) => state.notification);
   const dispatch = useDispatch();
   const [shuffledUsers, setShuffledUsers] = useState([]);
@@ -46,15 +46,18 @@ function LeftSide() {
     setShowNotifications(!showNotifications);
   };
 
-  // Shuffle once when suggestedUser changes
+  // Shuffle once when suggestedUser or following changes - Filter out already followed users and yourself
   useEffect(() => {
     if (suggestedUser?.length) {
-      const shuffled = [...suggestedUser]
+      const unfollowedUsers = suggestedUser.filter(user => 
+        !following?.includes(user._id) && user._id !== userData?._id
+      );
+      const shuffled = [...unfollowedUsers]
         .sort(() => Math.random() - 0.5)
         .slice(0, 10);
       setShuffledUsers(shuffled);
     }
-  }, [suggestedUser]);
+  }, [suggestedUser, following, userData?._id]);
 
   // Fetch unread count on component mount
   useEffect(() => {
