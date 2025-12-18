@@ -522,15 +522,15 @@ function LoopCard({ loop, onProfileClick, onLoopUpdate, onLoopSaved }) {
                     <div><span>{loop.comments.length}</span></div>
                 </div>
 
+                <div className='flex flex-col items-center cursor-pointer' onClick={() => setShowShareModal(true)}>
+                    <FaRegPaperPlane className="w-[25px] h-[25px]" />
+                </div>                            
+
                 <div className='flex flex-col items-center cursor-pointer' onClick={handleSaveLoop}>
                     {isSaved
                         ? <FaBookmark className="w-[25px] h-[25px] text-yellow-500" />
                         : <FaRegBookmark className="w-[25px] h-[25px]" />
                     }
-                </div>
-
-                <div className='flex flex-col items-center cursor-pointer' onClick={() => setShowShareModal(true)}>
-                    <FaRegPaperPlane className="w-[25px] h-[25px]" />
                 </div>
 
             </div>
