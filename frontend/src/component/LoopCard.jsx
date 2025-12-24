@@ -331,7 +331,7 @@ function LoopCard({ loop, onProfileClick, onLoopUpdate, onLoopSaved }) {
             )}
 
             {/* TOP RIGHT BUTTONS */}
-            <div className="absolute top-4 right-4 flex flex-col items-end gap-3 z-[200]">
+            <div className="absolute top-4 right-4 flex flex-col items-end gap-3 z-[90]">
                 {/* SOUND BUTTON */}
                 <div onClick={toggleMute} className="cursor-pointer bg-black/60 hover:bg-black/80 p-2 rounded-lg transition">
                     {!isMuted 
