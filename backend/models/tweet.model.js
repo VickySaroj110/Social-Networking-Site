@@ -30,6 +30,13 @@ const tweetSchema = new mongoose.Schema(
     // ✅ NEW
     image: { type: String, default: "" },
 
+    // ✅ VERDICT - Fact Check Result
+    verdict: {
+      type: String,
+      enum: ["TRUE", "FALSE", "CHECKING"],
+      default: "CHECKING",
+    },
+
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     comments: [commentSchema],
   },

@@ -1,5 +1,6 @@
 import Tweet from "../models/tweet.model.js";
 import uploadOnCloudinary from "../config/cloudinary.js";
+import { checkTweetVerdict } from "../services/factCheckService.js";
 
 export const createTweet = async (req, res) => {
   try {
@@ -15,11 +16,23 @@ export const createTweet = async (req, res) => {
       imageUrl = uploadResponse.secure_url;
     }
 
+    // ✅ CREATE TWEET FIRST (Fast UI)
     const tweet = await Tweet.create({
       author: req.userId,
       text: text.trim(),
       image: imageUrl || "",
+      verdict: "CHECKING", // Start with checking status
     });
+
+    // ✅ CHECK VERDICT IN BACKGROUND (Don't wait)
+    checkTweetVerdict(text.trim())
+      .then(async (verdict) => {
+        // Update tweet with verdict
+        await Tweet.findByIdAndUpdate(tweet._id, { verdict }, { new: true });
+      })
+      .catch((error) => {
+        console.error("Verdict check failed:", error);
+      });
 
     const populated = await Tweet.findById(tweet._id).populate(
       "author",

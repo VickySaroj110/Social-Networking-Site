@@ -168,25 +168,53 @@ function Tweets() {
           <div className="mt-5 flex flex-col gap-3 pb-24">
             {tweets.map((t) => (
               <div key={t._id} className="bg-[#1a1a1a] rounded-2xl p-4">
-                <div className="text-sm text-gray-300">
-                  <span
-                    className="cursor-pointer hover:underline"
-                    onClick={() => goProfile(t.author?.userName)}
-                  >
-                    @{t.author?.userName}
-                  </span>{" "}
-                  • {new Date(t.createdAt).toLocaleString()}
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="text-sm text-gray-300">
+                      <span
+                        className="cursor-pointer hover:underline"
+                        onClick={() => goProfile(t.author?.userName)}
+                      >
+                        @{t.author?.userName}
+                      </span>{" "}
+                      • {new Date(t.createdAt).toLocaleString()}
+                    </div>
+
+                    <div className="mt-2 text-white whitespace-pre-wrap">{t.text}</div>
+
+                    {t.image && (
+                      <img
+                        src={t.image}
+                        alt="tweet"
+                        className="mt-3 w-full max-h-[420px] object-cover rounded-2xl"
+                      />
+                    )}
+                  </div>
+
+                  {/* ✅ VERDICT BADGE - Right Side */}
+                  {t.verdict && (
+                    <div className="ml-3">
+                      <span
+                        className={`px-3 py-1 rounded-lg font-bold text-sm whitespace-nowrap ${
+                          t.verdict === "TRUE"
+                            ? "bg-green-500/30 text-green-400"
+                            : t.verdict === "FALSE"
+                            ? "bg-red-500/30 text-red-400"
+                            : "bg-gray-500/30 text-gray-400"
+                        }`}
+                        title={
+                          t.verdict === "CHECKING"
+                            ? "Fact-checking in progress..."
+                            : t.verdict === "TRUE"
+                            ? "Checked - Not misleading"
+                            : "Checked - Potentially misleading"
+                        }
+                      >
+                        {t.verdict}
+                      </span>
+                    </div>
+                  )}
                 </div>
-
-                <div className="mt-2 text-white whitespace-pre-wrap">{t.text}</div>
-
-                {t.image && (
-                  <img
-                    src={t.image}
-                    alt="tweet"
-                    className="mt-3 w-full max-h-[420px] object-cover rounded-2xl"
-                  />
-                )}
 
                 <div className="flex gap-3 mt-3">
                   <button
