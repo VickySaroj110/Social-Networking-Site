@@ -593,10 +593,7 @@ function SenderMessage({message}) {
       
       {/* REGULAR MESSAGE TEXT or EMPTY MESSAGE */}
       {(message.message || (!post && !message.image)) && !post && (
-        <div className='flex items-end gap-[8px] group'>
-          <div className='bg-gradient-to-br from-[#9500ff] to-[#ff0095] rounded-t-2xl rounded-bl-2xl rounded-br-0 px-[15px] py-[10px] text-[16px] text-white max-w-[400px] break-words min-h-[20px]'>
-            {message.message || <span className='text-gray-300 text-xs'>(empty message)</span>}
-          </div>
+        <div className='flex items-end gap-[8px] group justify-end'>
           <button
             onClick={handleDeleteMessage}
             className='flex-shrink-0 text-gray-400 hover:text-red-500 transition opacity-0 group-hover:opacity-100 p-[5px] cursor-pointer z-10'
@@ -604,27 +601,40 @@ function SenderMessage({message}) {
           >
             <FaTrash className='w-[16px] h-[16px]' />
           </button>
+          <div className='bg-gradient-to-br from-[#9500ff] to-[#ff0095] rounded-t-2xl rounded-bl-2xl rounded-br-0 px-[15px] py-[10px] text-[16px] text-white max-w-[400px] break-words min-h-[20px]'>
+            {message.message || <span className='text-gray-300 text-xs'>(empty message)</span>}
+          </div>
+          <div className='w-[30px] h-[30px] rounded-full cursor-pointer overflow-hidden flex-shrink-0'> 
+            <img src={userData.profileImage || dp} alt="" className='w-full h-full object-cover'/>
+          </div>
         </div>
       )}
       
       {/* MESSAGE IMAGE */}
       {message.image && !post && (
-        <div className='flex flex-col gap-[8px] group relative'>
-          <img src={message.image} alt="" className='h-[250px] w-full object-cover rounded-2xl'/>
+        <div className='flex items-end gap-[8px] group relative justify-end'>
           <button
             onClick={handleDeleteMessage}
-            className='absolute top-2 right-2 bg-black/50 hover:bg-red-500/70 transition p-[8px] rounded-lg opacity-0 group-hover:opacity-100 z-10 cursor-pointer'
+            className='flex-shrink-0 text-gray-400 hover:text-red-500 transition opacity-0 group-hover:opacity-100 p-[5px] cursor-pointer z-10'
             title="Delete message"
           >
-            <FaTrash className='w-[16px] h-[16px] text-white' />
+            <FaTrash className='w-[16px] h-[16px]' />
           </button>
+          <div className='relative'>
+            <img src={message.image} alt="" className='h-[250px] w-full object-cover rounded-2xl'/>
+            <button
+              onClick={handleDeleteMessage}
+              className='absolute top-2 right-2 bg-black/50 hover:bg-red-500/70 transition p-[8px] rounded-lg opacity-0 group-hover:opacity-100 z-10 cursor-pointer'
+              title="Delete message"
+            >
+              <FaTrash className='w-[16px] h-[16px] text-white' />
+            </button>
+          </div>
+          <div className='w-[30px] h-[30px] rounded-full cursor-pointer overflow-hidden flex-shrink-0'> 
+            <img src={userData.profileImage || dp} alt="" className='w-full h-full object-cover'/>
+          </div>
         </div>
       )}
-      
-      {/* PROFILE AVATAR */}
-      <div className='w-[30px] h-[30px] rounded-full cursor-pointer overflow-hidden ml-auto mt-[5px]'> 
-        <img src={userData.profileImage} alt="" className='w-full object-cover'/>
-      </div>
     </div>
   )
 }

@@ -597,6 +597,9 @@ function ReceiverMessage({message}) {
       {/* REGULAR MESSAGE TEXT or EMPTY MESSAGE */}
       {(message.message || (!post && !message.image)) && !post && (
         <div className='flex items-end gap-[8px]'>
+          <div className='w-[30px] h-[30px] rounded-full cursor-pointer overflow-hidden flex-shrink-0'> 
+            <img src={selectedUser.profileImage || dp} alt="" className='w-full h-full object-cover'/>
+          </div>
           <div className='bg-[#1a1f1f] rounded-t-2xl rounded-br-2xl rounded-bl-0 px-[15px] py-[10px] text-[16px] text-white max-w-[400px] break-words min-h-[20px]'>
             {message.message || <span className='text-gray-300 text-xs'>(empty message)</span>}
           </div>
@@ -605,15 +608,13 @@ function ReceiverMessage({message}) {
       
       {/* MESSAGE IMAGE */}
       {message.image && !post && (
-        <div className='flex flex-col gap-[8px]'>
+        <div className='flex items-end gap-[8px]'>
+          <div className='w-[30px] h-[30px] rounded-full cursor-pointer overflow-hidden flex-shrink-0'> 
+            <img src={selectedUser.profileImage || dp} alt="" className='w-full h-full object-cover'/>
+          </div>
           <img src={message.image} alt="" className='h-[250px] w-full object-cover rounded-2xl'/>
         </div>
       )}
-      
-      {/* PROFILE AVATAR */}
-      <div className='w-[30px] h-[30px] rounded-full cursor-pointer overflow-hidden mt-[5px]'> 
-        <img src={selectedUser.profileImage} alt="" className='w-full object-cover'/>
-      </div>
     </div>
   )
 }
