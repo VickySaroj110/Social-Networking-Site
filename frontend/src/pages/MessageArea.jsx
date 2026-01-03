@@ -190,7 +190,7 @@ function MessageArea() {
             <img
               src={selectedUser?.profileImage || dp1}
               alt=""
-              className="w-full object-cover"
+              className="w-full h-full object-cover"
             />
           </div>
 
