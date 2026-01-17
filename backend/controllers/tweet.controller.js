@@ -277,3 +277,68 @@ export const deleteReply = async (req, res) => {
     return res.status(500).json({ message: `deleteReply error: ${error}` });
   }
 };
+
+export const toggleSaveTweet = async (req, res) => {
+  try {
+    const { tweetId } = req.params;
+    const userId = String(req.userId);
+
+    const tweet = await Tweet.findById(tweetId);
+    if (!tweet) return res.status(404).json({ message: "Tweet not found" });
+
+    // Check if user has already saved this tweet
+    const alreadySaved = tweet.savedBy?.some((id) => String(id) === userId);
+
+    if (alreadySaved) {
+      // Unsave tweet
+      tweet.savedBy = tweet.savedBy.filter((id) => String(id) !== userId);
+    } else {
+      // Save tweet
+      if (!tweet.savedBy) tweet.savedBy = [];
+      tweet.savedBy.push(req.userId);
+    }
+
+    await tweet.save();
+
+    const populated = await Tweet.findById(tweet._id)
+      .populate("author", "name userName profileImage userName")
+      .populate("comments.author", "name userName profileImage")
+      .populate("comments.replies.author", "name userName profileImage");
+
+    return res.status(200).json({ saved: !alreadySaved, tweet: populated });
+  } catch (error) {
+    return res.status(500).json({ message: `toggleSaveTweet error: ${error}` });
+  }
+};
+
+export const getSavedTweets = async (req, res) => {
+  try {
+    const userId = String(req.userId);
+
+    const tweets = await Tweet.find({ savedBy: userId })
+      .populate("author", "name userName profileImage userName")
+      .populate("comments.author", "name userName profileImage")
+      .populate("comments.replies.author", "name userName profileImage")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json(tweets);
+  } catch (error) {
+    return res.status(500).json({ message: `getSavedTweets error: ${error}` });
+  }
+};
+
+export const getUserTweets = async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    const tweets = await Tweet.find({ author: userId })
+      .populate("author", "name userName profileImage")
+      .populate("comments.author", "name userName profileImage")
+      .populate("comments.replies.author", "name userName profileImage")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json(tweets);
+  } catch (error) {
+    return res.status(500).json({ message: `getUserTweets error: ${error}` });
+  }
+};

@@ -9,14 +9,19 @@ import {
   deleteTweet,
   deleteReply,
   getFeedTweets,
+  getSavedTweets,
   getTweetById,
   toggleLikeTweet,
+  toggleSaveTweet,
   updateTweet,
+  getUserTweets,
 } from "../controllers/tweet.controller.js";
 
 const tweetRouter = express.Router();
 
 tweetRouter.get("/feed", isAuth, getFeedTweets);
+tweetRouter.get("/savedTweets", isAuth, getSavedTweets);
+tweetRouter.get("/userTweets/:userId", isAuth, getUserTweets);
 tweetRouter.get("/:tweetId", isAuth, getTweetById);
 
 // ✅ image + text upload
@@ -26,6 +31,8 @@ tweetRouter.put("/:tweetId", isAuth, updateTweet);
 tweetRouter.delete("/:tweetId", isAuth, deleteTweet);
 
 tweetRouter.post("/:tweetId/like", isAuth, toggleLikeTweet);
+tweetRouter.post("/:tweetId/save", isAuth, toggleSaveTweet);
+tweetRouter.delete("/:tweetId/save", isAuth, toggleSaveTweet);
 
 tweetRouter.post("/:tweetId/comment", isAuth, addComment);
 tweetRouter.post("/:tweetId/comment/:commentId/reply", isAuth, addReply);

@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { appendLoopData, setLoopData } from '../redux/loopSlice';
 import { appendPostData, setPostData, clearPostData } from '../redux/postSlice';
 import { clearLoopData } from '../redux/loopSlice';
+import { setUserData } from '../redux/userSlice';
 import axios from 'axios';
 import { serverUrl } from '../App';
 
@@ -27,6 +28,33 @@ function Feed() {
   const [isInitialLoad, setIsInitialLoad] = useState(true)
 
   const reelsContainerRef = useRef(null);
+
+  // Fetch saved posts and reels on mount
+  useEffect(() => {
+    const fetchSavedItems = async () => {
+      try {
+        const [savedPostsRes, savedLoopsRes] = await Promise.all([
+          axios.get(`${serverUrl}/api/post/savedPosts`, { withCredentials: true }),
+          axios.get(`${serverUrl}/api/loop/savedLoops`, { withCredentials: true })
+        ]);
+        
+        const savedPostIds = savedPostsRes.data.map(p => p._id) || [];
+        const savedLoopIds = savedLoopsRes.data.map(l => l._id) || [];
+        
+        const savedIds = [...savedPostIds, ...savedLoopIds];
+        
+        dispatch(setUserData({
+          ...userData,
+          saved: savedPostIds,
+          savedLoops: savedLoopIds
+        }));
+      } catch (error) {
+        console.log("Error fetching saved items:", error);
+      }
+    };
+    
+    fetchSavedItems();
+  }, []);
 
   // Shuffle data on initial page load
   useEffect(() => {

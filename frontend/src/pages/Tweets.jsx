@@ -4,15 +4,17 @@ import { serverUrl } from "../App";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { MdOutlineKeyboardBackspace } from "react-icons/md";
-import { FaImage, FaTrash } from "react-icons/fa";
+import { FaImage, FaTrash, FaBookmark, FaRegBookmark } from "react-icons/fa";
 import { BiSearch } from "react-icons/bi";
 import { AiOutlineHeart } from "react-icons/ai";
 import defaultDP from "../assets/dp.png";
+import dp from "../assets/dp.png";
 
 function Tweets() {
   const navigate = useNavigate();
   const { userData } = useSelector((state) => state.user);
   const [tweets, setTweets] = useState([]);
+  const [savedTweets, setSavedTweets] = useState([]);
 
   const [text, setText] = useState("");
   const [image, setImage] = useState(null);
@@ -35,8 +37,22 @@ function Tweets() {
     }
   };
 
+  const fetchSavedTweets = async () => {
+    try {
+      const res = await axios.get(`${serverUrl}/api/tweet/savedTweets`, {
+        withCredentials: true,
+      });
+      const savedIds = res.data.map((tweet) => tweet._id) || [];
+      setSavedTweets(savedIds);
+    } catch (e) {
+      console.log("fetchSavedTweets error", e);
+      setSavedTweets([]);
+    }
+  };
+
   useEffect(() => {
     fetchFeed();
+    fetchSavedTweets();
   }, []);
 
   const handlePickImage = (file) => {
@@ -141,6 +157,30 @@ function Tweets() {
     }
   };
 
+  const toggleSaveTweet = async (tweetId) => {
+    try {
+      const isSaved = savedTweets.includes(tweetId);
+      
+      if (isSaved) {
+        // Unsave tweet
+        await axios.delete(`${serverUrl}/api/tweet/${tweetId}/save`, {
+          withCredentials: true,
+        });
+        setSavedTweets((prev) => prev.filter((id) => id !== tweetId));
+      } else {
+        // Save tweet
+        await axios.post(
+          `${serverUrl}/api/tweet/${tweetId}/save`,
+          {},
+          { withCredentials: true }
+        );
+        setSavedTweets((prev) => [...prev, tweetId]);
+      }
+    } catch (e) {
+      console.log("save tweet error", e);
+    }
+  };
+
   return (
     <div className="w-full h-screen overflow-y-auto bg-black text-black">
       <div className="w-full h-[70px] flex justify-between items-center px-[20px] sticky top-0 bg-black/95 backdrop-blur z-10">
@@ -158,7 +198,7 @@ function Tweets() {
             <div className="p-4 flex gap-4">
               {/* Profile Image - Current Logged In User's picture */}
               <img
-                src={userData?.profileImage || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + userData?._id}
+                src={userData?.profileImage || defaultDP}
                 alt="profile"
                 className="w-12 h-12 rounded-full object-cover flex-shrink-0"
               />
@@ -230,7 +270,7 @@ function Tweets() {
                   <div className="flex gap-3">
                     {/* Profile Image - Actual user picture */}
                     <img
-                      src={t.author?.profileImage || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + t.author?._id}
+                      src={t.author?.profileImage || dp}
                       alt="profile"
                       className="w-12 h-12 rounded-full object-cover flex-shrink-0"
                       onClick={() => goProfile(t.author?.userName)}
@@ -249,7 +289,7 @@ function Tweets() {
                           <span className="text-gray-500">@{t.author?.userName}</span>
                           <span className="text-gray-500">·</span>
                           <span className="text-gray-500 text-sm">
-                            {new Date(t.createdAt).toLocaleString()}
+                            {new Date(t.createdAt).toLocaleDateString()}
                           </span>
                         </div>
 
@@ -311,6 +351,20 @@ function Tweets() {
                         </button>
 
                         <button
+                          onClick={() => toggleSaveTweet(t._id)}
+                          className="group flex items-center gap-2 hover:text-yellow-500 transition"
+                          title={savedTweets.includes(t._id) ? "Remove from saved" : "Save tweet"}
+                        >
+                          <div className="w-8 h-8 rounded-full group-hover:bg-yellow-100 flex items-center justify-center">
+                            {savedTweets.includes(t._id) ? (
+                              <FaBookmark className="w-4 h-4 text-yellow-500" />
+                            ) : (
+                              <FaRegBookmark className="w-4 h-4" />
+                            )}
+                          </div>
+                        </button>
+
+                        <button
                           onClick={() => deleteTweet(t._id)}
                           className="text-gray-400 hover:text-red-500 hover:bg-red-100 rounded px-2 py-1 transition"
                           title="Delete tweet"
@@ -328,7 +382,7 @@ function Tweets() {
                     {/* Add Comment */}
                     <div className="flex gap-3 pb-4 border-b border-gray-200">
                       <img
-                        src={userData?.profileImage || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + userData?._id}
+                        src={userData?.profileImage || dp}
                         alt="profile"
                         className="w-10 h-10 rounded-full object-cover flex-shrink-0"
                       />

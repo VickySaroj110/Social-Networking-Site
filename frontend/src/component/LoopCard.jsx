@@ -9,7 +9,7 @@ import { setLoopData } from '../redux/loopSlice'
 import { setUserData } from '../redux/userSlice'
 import axios from 'axios'
 
-function LoopCard({ loop, onProfileClick, onLoopUpdate, onLoopSaved }) {
+function LoopCard({ loop, onProfileClick, onLoopUpdate, onLoopSaved, isSavedProp }) {
     const videoRef = useRef()
     const commentRef = useRef()
     const dispatch = useDispatch()
@@ -29,11 +29,15 @@ function LoopCard({ loop, onProfileClick, onLoopUpdate, onLoopSaved }) {
     const { userData } = useSelector(state => state.user)
     const { loopData } = useSelector(state => state.loop)
 
-    // Sync local saved state with Redux userData
+    // Sync local saved state with Redux userData or use provided prop
     useEffect(() => {
-        const isSavedInRedux = userData?.savedLoops?.includes(loop._id);
-        setIsSaved(isSavedInRedux || false)
-    }, [userData, loop._id])
+        if (isSavedProp !== undefined) {
+            setIsSaved(isSavedProp);
+        } else {
+            const isSavedInRedux = userData?.savedLoops?.includes(loop._id);
+            setIsSaved(isSavedInRedux || false);
+        }
+    }, [userData, loop._id, isSavedProp])
 
     const HandleTimeUpdate = () => {
         const video = videoRef.current
@@ -353,13 +357,13 @@ function LoopCard({ loop, onProfileClick, onLoopUpdate, onLoopSaved }) {
             {/* COMMENTS BOX */}
             <div
                 ref={commentRef}
-                className={`absolute z-[200] bottom-0 w-full h-[500px] shadow-2xl shadow-black
-                p-[10px] rounded-t-4xl bg-[#0e1718] transform transition-transform duration-500 ease-in-out left-0
-                ${showComment ? "translate-y-0" : "translate-y-[100%]"}`}
+                className={`absolute z-[99] bottom-0 w-full h-[450px] shadow-2xl shadow-black
+                p-[10px] rounded-t-4xl bg-[#0e1718] transform transition-transform duration-500 ease-in-out left-0 flex flex-col
+                ${showComment ? "translate-y-0" : "translate-y-[600px]"}`}
             >
                 <h1 className='text-white text-[20px] text-center font-semibold'>Comments</h1>
 
-                <div className='w-full h-[350px] overflow-y-auto flex flex-col gap-[20px]'>
+                <div className='flex-1 w-full overflow-y-auto flex flex-col gap-[20px]'>
 
                     {(!loop.comments || loop.comments.length === 0) && (
                         <div className='text-center text-white text-[20px] font-semibold mt-[50px]'>
@@ -407,7 +411,7 @@ function LoopCard({ loop, onProfileClick, onLoopUpdate, onLoopSaved }) {
                     ))}
                 </div>
 
-                <div className='w-full h-[80px] flex items-center justify-between px-[10px] bg-[#0e1718] pt-4'>
+                <div className='w-full h-[80px] flex items-center justify-between px-[10px] bg-[#0e1718] mt-auto'>
                     <div className='w-[40px] h-[40px] md:w-14 md:h-14 border-2 border-gray-300 rounded-full overflow-hidden'>
                         <img src={userData.profileImage || dp} className='w-full h-full object-cover' />
                     </div>
