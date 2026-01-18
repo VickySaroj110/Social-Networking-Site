@@ -438,9 +438,9 @@ function ReceiverMessage({message}) {
         </div>
       )}
 
-      {/* POST STYLE - WHITE CARD */}
+      {/* POST STYLE - DARK CARD */}
       {isPost && post && (
-        <div className='w-full bg-white rounded-2xl shadow-lg overflow-hidden'>
+        <div className='w-full bg-[#1a1a1a] rounded-2xl shadow-lg shadow-[#00000030] overflow-hidden border border-gray-700'>
           
           {/* USER HEADER */}
           <div className='w-full flex justify-between items-center px-4 py-3'>
@@ -448,10 +448,10 @@ function ReceiverMessage({message}) {
               onClick={() => navigate(`/profile/${post.author?.userName}`)}
               className='flex items-center gap-4 cursor-pointer hover:opacity-80 transition'
             >
-              <div className='w-12 h-12 border-2 border-gray-300 rounded-full overflow-hidden'>
+              <div className='w-12 h-12 border-2 border-gray-600 rounded-full overflow-hidden'>
                 <img src={post.author?.profileImage || dp} alt="" className='w-full h-full object-cover' />
               </div>
-              <div className='font-semibold text-gray-800 truncate max-w-[120px]'>
+              <div className='font-semibold text-white truncate max-w-[120px]'>
                 {post?.author?.userName}
               </div>
             </div>
@@ -505,23 +505,23 @@ function ReceiverMessage({message}) {
             <div className='flex justify-center items-center gap-[10px]'>
               <div className='flex justify-center items-center gap-[5px] cursor-pointer' onClick={handleLike}>
                 {!isLiked ? (
-                  <FaRegHeart className="w-[25px] h-[25px]" />
+                  <FaRegHeart className="w-[25px] h-[25px] text-white" />
                 ) : (
                   <FaHeart className="w-[25px] h-[25px] text-red-600" />
                 )}
-                <span className='text-gray-800'>{post.likes?.length || 0}</span>
+                <span className='text-white'>{post.likes?.length || 0}</span>
               </div>
 
               <div
                 className='flex justify-center items-center gap-[5px] cursor-pointer'
                 onClick={() => setshowComment(prev => !prev)}
               >
-                <FaRegComment className="w-[25px] h-[25px]" />
-                <span className='text-gray-800'>{post.comments?.length || 0}</span>
+                <FaRegComment className="w-[25px] h-[25px] text-white" />
+                <span className='text-white'>{post.comments?.length || 0}</span>
               </div>
 
               <div className='flex justify-center items-center gap-[5px] cursor-pointer' onClick={() => setShowShareModal(true)}>
-                <FaRegPaperPlane className="w-[25px] h-[25px]" />
+                <FaRegPaperPlane className="w-[25px] h-[25px] text-white" />
               </div>
             </div>
 
@@ -529,7 +529,7 @@ function ReceiverMessage({message}) {
               {isSaved ? (
                 <FaBookmark className="w-[25px] h-[25px] text-yellow-500" />
               ) : (
-                <FaRegBookmark className="w-[25px] h-[25px]" />
+                <FaRegBookmark className="w-[25px] h-[25px] text-white" />
               )}
             </div>
           </div>
@@ -537,8 +537,8 @@ function ReceiverMessage({message}) {
           {/* CAPTION */}
           {post.caption && (
             <div className='w-full px-[20px] gap-[10px] flex justify-start items-center py-2'>
-              <h1 className='font-semibold text-gray-800'>{post.author.userName}</h1>
-              <div className='text-gray-800'>{post.caption}</div>
+              <h1 className='font-semibold text-white'>{post.author.userName}</h1>
+              <div className='text-white'>{post.caption}</div>
             </div>
           )}
 
@@ -546,19 +546,19 @@ function ReceiverMessage({message}) {
           {showComment && (
             <div className='w-full flex flex-col gap-[15px] pb-[20px]'>
               <div className='w-full flex items-center justify-between px-[20px] py-2'>
-                <div className='w-[40px] h-[40px] border-2 border-gray-300 rounded-full overflow-hidden'>
+                <div className='w-[40px] h-[40px] border-2 border-gray-600 rounded-full overflow-hidden'>
                   <img src={userData?.profileImage || dp} alt="" className='w-full h-full object-cover' />
                 </div>
                 <input
                   type="text"
                   placeholder="Add a comment..."
-                  className='flex-1 mx-[10px] outline-0 border-b-2 border-gray-300 px-[10px] py-1 text-gray-800'
+                  className='flex-1 mx-[10px] outline-0 border-b-2 border-gray-600 px-[10px] py-1 text-white bg-transparent placeholder-gray-500'
                   value={commentMessage}
                   onChange={(e) => setCommentMessage(e.target.value)}
                 />
                 <button
                   onClick={handleComment}
-                  className='text-blue-600 font-semibold disabled:opacity-50'
+                  className='text-blue-400 font-semibold disabled:opacity-50'
                   disabled={!commentMessage}
                 >
                   Post
@@ -570,13 +570,13 @@ function ReceiverMessage({message}) {
                   <div key={index} className='flex gap-[10px]'>
                     <div 
                       onClick={() => navigate(`/profile/${comment.author?.userName}`)}
-                      className='w-[30px] h-[30px] border-2 border-gray-300 rounded-full overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-80 transition'
+                      className='w-[30px] h-[30px] border-2 border-gray-600 rounded-full overflow-hidden flex-shrink-0 cursor-pointer hover:opacity-80 transition'
                     >
                       <img src={comment.author?.profileImage || dp} alt="" className='w-full h-full object-cover' />
                     </div>
                     <div className='flex-1 min-w-0'>
-                      <h1 className='font-semibold text-sm text-gray-800'>{comment.author?.userName}</h1>
-                      <p className='text-gray-800 text-sm'>{comment.message}</p>
+                      <h1 className='font-semibold text-sm text-white'>{comment.author?.userName}</h1>
+                      <p className='text-white text-sm'>{comment.message}</p>
                     </div>
                     {userData._id === comment.author?._id && (
                       <button
